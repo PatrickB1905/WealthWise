@@ -14,7 +14,8 @@ import {
   MarketingNavPill,
   MarketingTopNav,
   MarketingTopNavInner,
-} from '@shared/ui/layout/Styled';
+  mobileMenuPaperSx,
+} from './marketing.styles';
 
 import type { NavSectionId } from '../types/home';
 
@@ -29,8 +30,6 @@ type Props = {
 
   onNav: (id: NavSectionId) => void;
   onNavAndClose: (id: NavSectionId) => void;
-
-  mobileMenuPaperSx: unknown;
 };
 
 export function HomeTopNav({
@@ -42,7 +41,6 @@ export function HomeTopNav({
   closeNavMenu,
   onNav,
   onNavAndClose,
-  mobileMenuPaperSx,
 }: Props) {
   return (
     <MarketingTopNav>

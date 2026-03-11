@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useAuth } from '@features/auth';
-import { FullPageCentered } from '@shared/ui/layout/Styled';
+import { FullPageCentered } from '@shared/ui';
 
 interface Props {
   children: React.ReactElement;

@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
-import Navbar from '@shared/ui/layout/Navbar';
-import Sidebar from '@shared/ui/layout/Sidebar';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
 import {
   ContentScrollArea,
   DashboardContainer,
   MainContent,
   RouteLinearProgress,
-} from '@shared/ui/layout/Styled';
-
+} from '../styles/app-shell.styles';
 import { ROUTE_TRANSITION_MS, dashboardTitleFromPath } from './styled.utils';
 
 import { AnalyticsPage } from '@features/analytics';

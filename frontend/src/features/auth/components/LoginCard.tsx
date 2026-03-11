@@ -5,7 +5,7 @@ import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { AuthContainer, AuthPaper, FormFooter, FormHeader } from '@shared/ui/layout/Styled';
+import { AuthContainer, AuthPaper, FormFooter, FormHeader } from './auth.styles';
 import { LoginForm } from './LoginForm';
 import type { UseLoginPageReturn } from '../hooks/useLoginPage';
 

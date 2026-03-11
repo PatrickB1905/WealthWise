@@ -1,7 +1,7 @@
 import CircularProgress from '@mui/material/CircularProgress';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 
-import { NewsMobileRefreshButton, NewsMobileStickyAction } from '@shared/ui';
+import { NewsMobileRefreshButton, NewsMobileStickyAction } from './news.styles';
 
 type Props = {
   onRefresh: () => void;

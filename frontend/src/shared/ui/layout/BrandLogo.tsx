@@ -3,7 +3,7 @@ import React from 'react';
 import wealthwiseDarkPrimary from '@assets/images/branding/wealthwise-dark-primary.png';
 import wealthwiseLightPrimary from '@assets/images/branding/wealthwise-light-primary.png';
 
-import { BrandLogoImage, BrandLogoLink } from '@shared/ui';
+import { BrandLogoImage, BrandLogoLink } from '../styles/brand.styles';
 
 type BrandLogoVariant = 'marketing' | 'sidebar';
 

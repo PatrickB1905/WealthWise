@@ -1,6 +1,5 @@
 import React from 'react';
 import Button from '@mui/material/Button';
-import ButtonGroup from '@mui/material/ButtonGroup';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 
@@ -24,6 +23,7 @@ import { PositionsDesktopTable } from '../components/PositionsDesktopTable';
 import { PositionsTotalsCard } from '../components/PositionsTotalsCard';
 import { PositionDialogs } from '../components/PositionDialogs';
 import { PositionsToast } from '../components/PositionsToast';
+import { PositionsPrimaryButton, PositionsTabButtonGroup } from '../components/PositionDialogs.styles';
 
 const PositionsPage: React.FC = () => {
   const theme = useTheme();
@@ -38,7 +38,7 @@ const PositionsPage: React.FC = () => {
 
         <SectionContent>
           <PositionsTabGroupWrap>
-            <ButtonGroup>
+            <PositionsTabButtonGroup size="small">
               <Button
                 variant={vm.tab === 'open' ? 'contained' : 'outlined'}
                 onClick={() => vm.setTab('open')}
@@ -51,7 +51,7 @@ const PositionsPage: React.FC = () => {
               >
                 Closed
               </Button>
-            </ButtonGroup>
+            </PositionsTabButtonGroup>
           </PositionsTabGroupWrap>
 
           <PositionsKpis
@@ -71,9 +71,9 @@ const PositionsPage: React.FC = () => {
             subheader={vm.listSubtitle}
             action={
               vm.tab === 'open' ? (
-                <Button variant="contained" onClick={vm.openAddDialog}>
+                <PositionsPrimaryButton variant="contained" size="small" onClick={vm.openAddDialog}>
                   Add Position
-                </Button>
+                </PositionsPrimaryButton>
               ) : null
             }
           />

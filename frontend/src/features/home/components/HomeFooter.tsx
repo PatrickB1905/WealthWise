@@ -7,7 +7,7 @@ import {
   FooterLink,
   FooterSection,
   FooterTitle,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 import type { NavSectionId } from '../types/home';
 
 type Props = {

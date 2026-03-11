@@ -5,14 +5,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import { Link as RouterLink } from 'react-router-dom';
 
-import {
-  CenteredBox,
-  NewsContent,
-  PageCard,
-  SectionContent,
-  SectionHeader,
-  StyledContainer,
-} from '@shared/ui';
+import { CenteredBox, PageCard, SectionContent, SectionHeader, StyledContainer } from '@shared/ui';
+import { NewsContent } from '../components/news.styles';
 
 import { useNewsPage } from '../hooks/useNewsPage';
 import NewsLoading from '../components/NewsLoading';

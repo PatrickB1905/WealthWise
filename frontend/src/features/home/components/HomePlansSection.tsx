@@ -10,7 +10,7 @@ import {
   FeatureCardLayout,
   SectionEyebrow,
   SectionWrap,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 
 type Props = {
   onRegister: () => void;

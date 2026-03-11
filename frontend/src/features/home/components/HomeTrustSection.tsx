@@ -11,7 +11,7 @@ import {
   SectionSurface,
   SoftGridBackground,
   SplitGrid,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 
 import type { TrustItem } from '../types/home';
 

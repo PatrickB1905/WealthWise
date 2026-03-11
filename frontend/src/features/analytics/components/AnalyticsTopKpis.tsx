@@ -2,14 +2,8 @@ import React from 'react';
 import Typography from '@mui/material/Typography';
 
 import type { Summary, Tone } from '../types/analytics';
-import {
-  Grid3,
-  MetricCard,
-  MetricHeaderRow,
-  MetricValue,
-  SectionContent,
-  SectionHeader,
-} from '@shared/ui';
+import { Grid3, SectionContent, SectionHeader } from '@shared/ui';
+import { MetricCard, MetricHeaderRow, MetricValue } from './analytics.styles';
 import { TitleWithTip } from './AnalyticsInfoTip';
 
 type Props = {
@@ -36,7 +30,7 @@ export const AnalyticsTopKpis: React.FC<Props> = ({ summary, plTone, pctTone, mo
           subheader="Capital currently tracked"
         />
         <SectionContent>
-          <MetricValue tone="neutral" variant="h4">
+          <MetricValue tone="neutral" variant="inherit">
             ${money(summary.invested)}
           </MetricValue>
           <Typography variant="body2" color="text.secondary">
@@ -56,7 +50,7 @@ export const AnalyticsTopKpis: React.FC<Props> = ({ summary, plTone, pctTone, mo
           subheader="Profit / loss in dollars"
         />
         <SectionContent>
-          <MetricValue tone={plTone} variant="h4">
+          <MetricValue tone={plTone} variant="inherit">
             ${money(summary.totalPL)}
           </MetricValue>
           <Typography variant="body2" color="text.secondary">
@@ -76,7 +70,7 @@ export const AnalyticsTopKpis: React.FC<Props> = ({ summary, plTone, pctTone, mo
           subheader="Profit / loss in percent"
         />
         <SectionContent>
-          <MetricValue tone={pctTone} variant="h4">
+          <MetricValue tone={pctTone} variant="inherit">
             {pct(summary.totalPLPercent)}%
           </MetricValue>
           <Typography variant="body2" color="text.secondary">

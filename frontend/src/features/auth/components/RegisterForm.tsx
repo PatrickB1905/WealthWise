@@ -9,7 +9,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { FormButton } from '@shared/ui/layout/Styled';
+import { FormButton } from './auth.styles';
 
 type Touched = { firstName: boolean; lastName: boolean; email: boolean; password: boolean };
 

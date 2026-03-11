@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { HeroOverlay, HeroSection } from '@shared/ui/layout/Styled';
+import { HeroOverlay, HeroSection } from '../components/auth.styles';
 
 import { useRegisterPage } from '../hooks/useRegisterPage';
 import { RegisterTopNav } from '../components/RegisterTopNav';

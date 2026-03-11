@@ -1,6 +1,5 @@
 import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import NewspaperRoundedIcon from '@mui/icons-material/NewspaperRounded';
 
@@ -12,12 +11,15 @@ import {
   NewsMoreChip,
   NewsRefreshDesktopButton,
   NewsSubheaderWrap,
+  NewsSubtitleText,
   NewsTickerChip,
   NewsTickerChipsWrap,
+  NewsTitleText,
   NewsUpdatedDot,
   NewsUpdatedPill,
   NewsUpdatedRow,
-} from '@shared/ui';
+  NewsUpdatedText,
+} from './news.styles';
 
 type Props = {
   tickers: string[];
@@ -43,12 +45,10 @@ export default function NewsHeader({
           </NewsBrandIcon>
 
           <NewsBrandText>
-            <Typography variant="h6" fontWeight={950} noWrap>
-              News
-            </Typography>
-            <Typography variant="body2" color="text.secondary" noWrap>
+            <NewsTitleText noWrap>News</NewsTitleText>
+            <NewsSubtitleText color="text.secondary" noWrap>
               Headlines matched to your holdings
-            </Typography>
+            </NewsSubtitleText>
           </NewsBrandText>
         </Stack>
 
@@ -69,9 +69,9 @@ export default function NewsHeader({
           <NewsUpdatedRow>
             <NewsUpdatedPill dimmed={isRefreshing}>
               {isRefreshing ? <CircularProgress size={16} /> : <NewsUpdatedDot />}
-              <Typography variant="body2" sx={{ fontWeight: 900, color: 'text.secondary' }}>
+              <NewsUpdatedText>
                 {isRefreshing ? 'Refreshing…' : `Updated ${updatedLabel}`}
-              </Typography>
+              </NewsUpdatedText>
             </NewsUpdatedPill>
 
             <NewsRefreshDesktopButton
@@ -87,9 +87,9 @@ export default function NewsHeader({
       </NewsHeaderWrap>
 
       <NewsSubheaderWrap>
-        <Typography variant="body2" color="text.secondary">
+        <NewsSubtitleText color="text.secondary">
           Showing the latest headlines for: <strong>{symbols.split(',').join(', ')}</strong>
-        </Typography>
+        </NewsSubtitleText>
       </NewsSubheaderWrap>
     </>
   );

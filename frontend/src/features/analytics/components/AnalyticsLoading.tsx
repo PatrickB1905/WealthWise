@@ -3,14 +3,13 @@ import Skeleton from '@mui/material/Skeleton';
 import {
   Grid3,
   Grid4,
-  MetricCard,
   PageCard,
   SectionContent,
   SectionHeader,
   SpacedSection,
   StyledContainer,
-  MetricValue,
 } from '@shared/ui';
+import { MetricCard, MetricValue } from './analytics.styles';
 
 export function AnalyticsLoading() {
   return (

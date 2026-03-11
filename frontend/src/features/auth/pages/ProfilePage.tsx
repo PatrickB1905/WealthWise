@@ -1,12 +1,7 @@
 import React from 'react';
 
-import {
-  PageCard,
-  ProfileContent,
-  ProfileTwoColGrid,
-  SectionDivider,
-  StyledContainer,
-} from '@shared/ui/layout/Styled';
+import { PageCard, SectionDivider, StyledContainer } from '@shared/ui';
+import { ProfileContent, ProfileTwoColGrid } from '../components/profile.styles';
 
 import { useProfilePage } from '../hooks/useProfilePage';
 import { ProfileLoadingState } from '../components/ProfileLoadingState';

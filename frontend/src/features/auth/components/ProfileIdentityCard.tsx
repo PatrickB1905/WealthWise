@@ -12,7 +12,7 @@ import {
   ProfileIdentityIconBox,
   ProfileMemberSinceChip,
   ProfileStatusChip,
-} from '@shared/ui/layout/Styled';
+} from './profile.styles';
 
 type Props = {
   profile: Profile;

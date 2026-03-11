@@ -3,7 +3,7 @@ import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { FeatureCardLayout, SectionEyebrow, SectionWrap } from '@shared/ui/layout/Styled';
+import { FeatureCardLayout, SectionEyebrow, SectionWrap } from './marketing.styles';
 import type { StepItem } from '../types/home';
 
 type Props = {

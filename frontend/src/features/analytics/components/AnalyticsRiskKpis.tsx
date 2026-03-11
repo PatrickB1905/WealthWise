@@ -2,14 +2,8 @@ import React from 'react';
 import Typography from '@mui/material/Typography';
 
 import type { RiskResponse } from '../types/analytics';
-import {
-  Grid4,
-  MetricCard,
-  MetricValue,
-  SectionContent,
-  SectionHeader,
-  AppTooltip,
-} from '@shared/ui';
+import { Grid4, SectionContent, SectionHeader, AppTooltip } from '@shared/ui';
+import { MetricCard, MetricValue } from './analytics.styles';
 import { TitleWithTip } from './AnalyticsInfoTip';
 
 type Props = {
@@ -33,7 +27,7 @@ export const AnalyticsRiskKpis: React.FC<Props> = ({ risk, num, fixed, pct }) =>
           subheader="Risk measure"
         />
         <SectionContent>
-          <MetricValue tone="neutral" variant="h5">
+          <MetricValue tone="neutral" variant="inherit">
             {fixed(num(risk.volatilityAnnualized) * 100, 2)}%
           </MetricValue>
         </SectionContent>
@@ -50,7 +44,7 @@ export const AnalyticsRiskKpis: React.FC<Props> = ({ risk, num, fixed, pct }) =>
           subheader="Peak-to-trough loss"
         />
         <SectionContent>
-          <MetricValue tone="negative" variant="h5">
+          <MetricValue tone="negative" variant="inherit">
             {pct(risk.maxDrawdownPercent)}%
           </MetricValue>
         </SectionContent>
@@ -67,7 +61,7 @@ export const AnalyticsRiskKpis: React.FC<Props> = ({ risk, num, fixed, pct }) =>
           subheader="Return vs risk"
         />
         <SectionContent>
-          <MetricValue tone="neutral" variant="h5">
+          <MetricValue tone="neutral" variant="inherit">
             {fixed(risk.sharpeAnnualized, 2)}
           </MetricValue>
         </SectionContent>
@@ -84,7 +78,7 @@ export const AnalyticsRiskKpis: React.FC<Props> = ({ risk, num, fixed, pct }) =>
           subheader="Market relationship"
         />
         <SectionContent>
-          <MetricValue tone="neutral" variant="h5">
+          <MetricValue tone="neutral" variant="inherit">
             {fixed(risk.correlation, 2)}
           </MetricValue>
           <Typography variant="body2" color="text.secondary">

@@ -8,7 +8,7 @@ import {
   MarketingNavLink,
   MarketingTopNav,
   MarketingTopNavInner,
-} from '@shared/ui/layout/Styled';
+} from './auth.styles';
 
 type Props = {
   onBackToHome: () => void;

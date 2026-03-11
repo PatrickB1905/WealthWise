@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { SectionEyebrow, SectionWrap } from '@shared/ui/layout/Styled';
+import { SectionWrap, SectionEyebrow } from './marketing.styles';
 import type { FaqItem } from '../types/home';
 
 type Props = {

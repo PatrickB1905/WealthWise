@@ -3,7 +3,8 @@ import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
 import Skeleton from '@mui/material/Skeleton';
 
-import { NewsListItem, PageCard, SectionContent, SectionHeader, StyledContainer } from '@shared/ui';
+import { PageCard, SectionContent, SectionHeader, StyledContainer } from '@shared/ui';
+import { NewsListItem } from './news.styles';
 
 export default function NewsLoading() {
   return (

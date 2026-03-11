@@ -5,7 +5,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { ProfileDialogActions, ProfileDialogButton, SpacedAlert } from '@shared/ui/layout/Styled';
+import { SpacedAlert } from '@shared/ui';
+import { ProfileDialogActions, ProfileDialogButton } from './profile.styles';
 
 type Props = {
   open: boolean;

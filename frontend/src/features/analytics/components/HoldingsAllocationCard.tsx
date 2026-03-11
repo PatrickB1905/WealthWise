@@ -10,8 +10,6 @@ import Typography from '@mui/material/Typography';
 
 import type { Overview } from '../types/analytics';
 import {
-  AnalyticsTableHeadLabel,
-  AnalyticsTableHeadLabelRight,
   AppTooltip,
   CenteredStack,
   EmptyStateText,
@@ -30,6 +28,10 @@ import {
   SectionHeader,
   TableWrap,
 } from '@shared/ui';
+import {
+  AnalyticsTableHeadLabel,
+  AnalyticsTableHeadLabelRight,
+} from './analytics.styles';
 import { InfoTip, TitleWithTip } from './AnalyticsInfoTip';
 
 type Props = {
@@ -65,7 +67,7 @@ export const HoldingsAllocationCard: React.FC<Props> = ({
 
       <SectionContent>
         <InlineInfoAlert severity="info">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minWidth: 0, overflow: 'hidden' }}>
             <span>
               Concentration — Top 5 weight: {fixed(overview.concentration?.top5WeightPercent, 2)}% •
               HHI: {fixed(overview.concentration?.hhi, 4)}

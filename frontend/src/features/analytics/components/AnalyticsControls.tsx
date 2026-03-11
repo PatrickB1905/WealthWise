@@ -1,8 +1,8 @@
 import React from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
-import Typography from '@mui/material/Typography';
 
 import { BENCHMARKS, DAY_WINDOWS, type Benchmark } from '../constants';
+import { ControlsLabel, SectionContent } from '@shared/ui';
 import {
   AnalyticsControlBlock,
   AnalyticsControlLabel,
@@ -10,12 +10,11 @@ import {
   AnalyticsControlsGrid,
   AnalyticsFreshnessDot,
   AnalyticsFreshnessPill,
+  AnalyticsFreshnessText,
   AnalyticsFreshnessWrap,
   AnalyticsLabelInline,
   AnalyticsToggleGroup,
-  ControlsLabel,
-  SectionContent,
-} from '@shared/ui';
+} from './analytics.styles';
 import { InfoTip } from './AnalyticsInfoTip';
 
 type Props = {
@@ -58,7 +57,7 @@ export const AnalyticsControls: React.FC<Props> = ({
               aria-label="benchmark"
             >
               {BENCHMARKS.map((b) => (
-                <ToggleButton key={b} value={b} sx={{ fontWeight: 700 }}>
+                <ToggleButton key={b} value={b}>
                   {b}
                 </ToggleButton>
               ))}
@@ -86,7 +85,7 @@ export const AnalyticsControls: React.FC<Props> = ({
               aria-label="days window"
             >
               {DAY_WINDOWS.map((w) => (
-                <ToggleButton key={w.days} value={w.days} sx={{ fontWeight: 700 }}>
+                <ToggleButton key={w.days} value={w.days}>
                   {w.label}
                 </ToggleButton>
               ))}
@@ -114,9 +113,7 @@ export const AnalyticsControls: React.FC<Props> = ({
 
             <AnalyticsFreshnessPill>
               <AnalyticsFreshnessDot />
-              <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.secondary' }}>
-                Updated {updatedLabel}
-              </Typography>
+              <AnalyticsFreshnessText>Updated {updatedLabel}</AnalyticsFreshnessText>
             </AnalyticsFreshnessPill>
           </AnalyticsFreshnessWrap>
         </AnalyticsControlsGrid>

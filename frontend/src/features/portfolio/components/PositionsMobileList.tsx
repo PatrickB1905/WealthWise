@@ -1,4 +1,3 @@
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
 import {
@@ -31,12 +30,12 @@ import {
 } from '../utils/format';
 import { quoteState } from '../utils/quotes';
 import type { RemoteQuote } from '@features/market-data/hooks/useQuotes';
+import { PositionsMobileActionButton } from './PositionDialogs.styles';
 
 type Props = {
   tab: 'open' | 'closed';
   positions: Position[];
   quotesMap: Record<string, RemoteQuote>;
-
   onClose: (p: Position) => void;
   onEdit: (p: Position) => void;
   onDelete: (p: Position) => void;
@@ -122,13 +121,18 @@ export function PositionsMobileList({
               <SoftDivider />
 
               <MobileCardActions>
-                <Button size="small" variant="outlined" onClick={() => onEdit(pos)}>
+                <PositionsMobileActionButton size="small" variant="outlined" onClick={() => onEdit(pos)}>
                   Edit
-                </Button>
+                </PositionsMobileActionButton>
 
-                <Button size="small" variant="outlined" color="error" onClick={() => onDelete(pos)}>
+                <PositionsMobileActionButton
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => onDelete(pos)}
+                >
                   Delete
-                </Button>
+                </PositionsMobileActionButton>
               </MobileCardActions>
             </MobilePositionCard>
           );
@@ -201,17 +205,22 @@ export function PositionsMobileList({
             <SoftDivider />
 
             <MobileCardActions>
-              <Button size="small" variant="outlined" onClick={() => onClose(pos)}>
+              <PositionsMobileActionButton size="small" variant="outlined" onClick={() => onClose(pos)}>
                 Close
-              </Button>
+              </PositionsMobileActionButton>
 
-              <Button size="small" variant="outlined" onClick={() => onEdit(pos)}>
+              <PositionsMobileActionButton size="small" variant="outlined" onClick={() => onEdit(pos)}>
                 Edit
-              </Button>
+              </PositionsMobileActionButton>
 
-              <Button size="small" variant="outlined" color="error" onClick={() => onDelete(pos)}>
+              <PositionsMobileActionButton
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={() => onDelete(pos)}
+              >
                 Delete
-              </Button>
+              </PositionsMobileActionButton>
             </MobileCardActions>
           </MobilePositionCard>
         );

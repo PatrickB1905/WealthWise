@@ -16,14 +16,14 @@ import { useAuth } from '@features/auth';
 import BrandLogo from './BrandLogo';
 import {
   SidebarBrand,
-  SidebarBrandLogoWrap,
   SidebarContainer,
   SidebarDivider,
   SidebarIcon,
   SidebarInner,
   SidebarNavItem,
   SidebarPush,
-} from '@shared/ui';
+} from '../styles/sidebar.styles';
+import { SidebarBrandLogoWrap } from '../styles/brand.styles';
 
 type NavItem = {
   label: string;

@@ -12,7 +12,7 @@ import {
   KickerDot,
   PrimaryHeroButton,
   SubtleKicker,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 
 type Props = {
   heroImg: string;

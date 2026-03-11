@@ -6,13 +6,12 @@ import Typography from '@mui/material/Typography';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
 
 import type { BannerMsg } from '../types/profile';
+import { FormActions, SpacedAlert } from '@shared/ui';
 import {
-  FormActions,
   ProfileIconBox,
   ProfilePrimaryActionButton,
   ProfileSectionCard,
-  SpacedAlert,
-} from '@shared/ui/layout/Styled';
+} from './profile.styles';
 
 type Props = {
   currentPwd: string;

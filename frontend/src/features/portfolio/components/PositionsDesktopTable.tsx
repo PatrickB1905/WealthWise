@@ -1,5 +1,4 @@
 import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -31,13 +30,13 @@ import {
 } from '../utils/format';
 import { quoteState } from '../utils/quotes';
 import type { PricingTotals } from '../hooks/usePositionsPage';
+import { PositionsTableActionButton } from './PositionDialogs.styles';
 
 type Props = {
   tab: 'open' | 'closed';
   positions: Position[];
   quotesMap: Record<string, RemoteQuote>;
   pricing: PricingTotals;
-
   onClose: (p: Position) => void;
   onEdit: (p: Position) => void;
   onDelete: (p: Position) => void;
@@ -109,18 +108,22 @@ export function PositionsDesktopTable({
 
                   <TableCell align="center">
                     <PositionsActions>
-                      <Button size="small" variant="outlined" onClick={() => onEdit(pos)}>
+                      <PositionsTableActionButton
+                        size="small"
+                        variant="outlined"
+                        onClick={() => onEdit(pos)}
+                      >
                         Edit
-                      </Button>
+                      </PositionsTableActionButton>
 
-                      <Button
+                      <PositionsTableActionButton
                         size="small"
                         variant="outlined"
                         color="error"
                         onClick={() => onDelete(pos)}
                       >
                         Delete
-                      </Button>
+                      </PositionsTableActionButton>
                     </PositionsActions>
                   </TableCell>
                 </TableRow>
@@ -170,22 +173,30 @@ export function PositionsDesktopTable({
 
                 <TableCell align="center">
                   <PositionsActions>
-                    <Button size="small" variant="outlined" onClick={() => onClose(pos)}>
+                    <PositionsTableActionButton
+                      size="small"
+                      variant="outlined"
+                      onClick={() => onClose(pos)}
+                    >
                       Close
-                    </Button>
+                    </PositionsTableActionButton>
 
-                    <Button size="small" variant="outlined" onClick={() => onEdit(pos)}>
+                    <PositionsTableActionButton
+                      size="small"
+                      variant="outlined"
+                      onClick={() => onEdit(pos)}
+                    >
                       Edit
-                    </Button>
+                    </PositionsTableActionButton>
 
-                    <Button
+                    <PositionsTableActionButton
                       size="small"
                       variant="outlined"
                       color="error"
                       onClick={() => onDelete(pos)}
                     >
                       Delete
-                    </Button>
+                    </PositionsTableActionButton>
                   </PositionsActions>
                 </TableCell>
               </TableRow>

@@ -1,20 +1,5 @@
 import React from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
-
-import { RANGE_OPTIONS, CHART_Y_AXIS_WIDTH } from '../constants';
-import type { HistoryItem } from '../types/analytics';
-import {
-  AnalyticsChartFrame,
-  AnalyticsHeaderActions,
-  AnalyticsHeaderRow,
-  AnalyticsLabelInline,
-  AnalyticsRangeToggleGroup,
-  ControlsLabel,
-  PageCard,
-  SectionContent,
-  SectionHeader,
-} from '@shared/ui';
-import { TitleWithTip, InfoTip } from './AnalyticsInfoTip';
 import {
   Area,
   AreaChart,
@@ -24,6 +9,18 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+
+import { RANGE_OPTIONS, CHART_Y_AXIS_WIDTH } from '../constants';
+import type { HistoryItem } from '../types/analytics';
+import { ControlsLabel, PageCard, SectionContent, SectionHeader } from '@shared/ui';
+import {
+  AnalyticsChartFrame,
+  AnalyticsHeaderActions,
+  AnalyticsHeaderRow,
+  AnalyticsHeaderToggleGroup,
+  AnalyticsLabelInline,
+} from './analytics.styles';
+import { TitleWithTip, InfoTip } from './AnalyticsInfoTip';
 
 type ChartConfig = {
   gridStroke: string;
@@ -79,28 +76,20 @@ export const ProfitHistoryCard: React.FC<Props> = ({
                 />
               </AnalyticsLabelInline>
 
-              <AnalyticsRangeToggleGroup
+              <AnalyticsHeaderToggleGroup
                 value={rangeMonths}
                 exclusive
                 onChange={(_, val: number | null) => {
                   if (val) onRangeMonthsChange(val);
                 }}
                 aria-label="time range"
-                sx={{
-                  width: { xs: '100%', sm: 'auto' },
-                  '& .MuiToggleButton-root': {
-                    flex: { xs: 1, sm: 'initial' },
-                    borderRadius: 2,
-                    py: 1,
-                  },
-                }}
               >
                 {RANGE_OPTIONS.map((opt) => (
-                  <ToggleButton key={opt.months} value={opt.months} sx={{ fontWeight: 700 }}>
+                  <ToggleButton key={opt.months} value={opt.months}>
                     {opt.label}
                   </ToggleButton>
                 ))}
-              </AnalyticsRangeToggleGroup>
+              </AnalyticsHeaderToggleGroup>
             </AnalyticsHeaderActions>
           </AnalyticsHeaderRow>
         }
@@ -110,7 +99,7 @@ export const ProfitHistoryCard: React.FC<Props> = ({
       <SectionContent>
         <AnalyticsChartFrame>
           <ResponsiveContainer>
-            <AreaChart data={history} margin={{ top: 10, right: 12, left: 6, bottom: 8 }}>
+            <AreaChart data={history} margin={{ top: 6, right: 8, left: 0, bottom: 4 }}>
               <defs>
                 <linearGradient id={chart.areaFillId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={chart.primary} stopOpacity={0.22} />

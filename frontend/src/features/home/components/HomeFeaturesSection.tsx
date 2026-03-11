@@ -13,7 +13,7 @@ import {
   PreviewImage,
   SectionEyebrow,
   SplitGrid,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 
 import type { FeatureCard, HighlightItem } from '../types/home';
 

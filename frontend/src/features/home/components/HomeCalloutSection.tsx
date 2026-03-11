@@ -5,7 +5,7 @@ import {
   CalloutTitle,
   CalloutWrap,
   CTAButton,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 
 type Props = {
   onRegister: () => void;

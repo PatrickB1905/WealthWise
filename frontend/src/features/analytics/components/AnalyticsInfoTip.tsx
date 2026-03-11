@@ -1,7 +1,8 @@
 import React from 'react';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-import { AnalyticsLabelInline, AppTooltip, KpiInfoButton } from '@shared/ui';
+import { AppTooltip, KpiInfoButton } from '@shared/ui';
+import { AnalyticsLabelInline } from './analytics.styles';
 
 export const InfoTip: React.FC<{ title: React.ReactNode; ariaLabel: string }> = ({
   title,

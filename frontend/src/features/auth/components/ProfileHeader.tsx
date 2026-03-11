@@ -1,18 +1,20 @@
 import React from 'react';
-import Typography from '@mui/material/Typography';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 
+import { SectionHeader } from '@shared/ui';
 import {
   ProfileAvatar,
   ProfileHeaderLeft,
   ProfileHeaderRight,
+  ProfileHeaderSubtitle,
   ProfileHeaderText,
+  ProfileHeaderTitle,
   ProfileHeaderWrap,
   ProfileRefreshButton,
   ProfileUpdatedDot,
   ProfileUpdatedPill,
-  SectionHeader,
-} from '@shared/ui/layout/Styled';
+  ProfileUpdatedText,
+} from './profile.styles';
 
 type Props = {
   initials: string;
@@ -29,12 +31,10 @@ export const ProfileHeader: React.FC<Props> = ({ initials, updatedLabel, onRefre
             <ProfileAvatar>{initials}</ProfileAvatar>
 
             <ProfileHeaderText>
-              <Typography variant="h6" fontWeight={950} noWrap>
-                My Profile
-              </Typography>
-              <Typography variant="body2" color="text.secondary" noWrap>
+              <ProfileHeaderTitle noWrap>My Profile</ProfileHeaderTitle>
+              <ProfileHeaderSubtitle color="text.secondary" noWrap>
                 Account details and security settings
-              </Typography>
+              </ProfileHeaderSubtitle>
             </ProfileHeaderText>
           </ProfileHeaderLeft>
 
@@ -45,9 +45,7 @@ export const ProfileHeader: React.FC<Props> = ({ initials, updatedLabel, onRefre
           >
             <ProfileUpdatedPill>
               <ProfileUpdatedDot />
-              <Typography variant="body2" sx={{ fontWeight: 900, color: 'text.secondary' }}>
-                Updated {updatedLabel}
-              </Typography>
+              <ProfileUpdatedText>Updated {updatedLabel}</ProfileUpdatedText>
             </ProfileUpdatedPill>
 
             <ProfileRefreshButton

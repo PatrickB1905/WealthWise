@@ -6,13 +6,12 @@ import Typography from '@mui/material/Typography';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 
 import type { BannerMsg } from '../types/profile';
+import { FormActions, SpacedAlert } from '@shared/ui';
 import {
-  FormActions,
   ProfileIconBox,
   ProfilePrimaryActionButton,
   ProfileSectionCard,
-  SpacedAlert,
-} from '@shared/ui/layout/Styled';
+} from './profile.styles';
 
 type Props = {
   newEmail: string;

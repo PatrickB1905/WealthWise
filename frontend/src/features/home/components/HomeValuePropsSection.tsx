@@ -10,7 +10,7 @@ import {
   SectionEyebrow,
   SectionSurface,
   SoftGridBackground,
-} from '@shared/ui/layout/Styled';
+} from './marketing.styles';
 
 import type { ValuePropItem } from '../types/home';
 

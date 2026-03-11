@@ -46,7 +46,7 @@ export function PositionsKpis({ loading, tab, pricing, totalsProfitTone, totalsP
           {loading ? (
             <SkeletonBlock variant="text" height={40} width="70%" />
           ) : (
-            <KpiValue variant="h4" tone="neutral">
+            <KpiValue variant="inherit" tone="neutral">
               {money(pricing.totalInvested)}
             </KpiValue>
           )}
@@ -82,7 +82,7 @@ export function PositionsKpis({ loading, tab, pricing, totalsProfitTone, totalsP
           {loading ? (
             <SkeletonBlock variant="text" height={40} width="75%" />
           ) : (
-            <KpiValue variant="h4" tone={totalsProfitTone}>
+            <KpiValue variant="inherit" tone={totalsProfitTone}>
               {money(pricing.totalProfitKnown)}
             </KpiValue>
           )}
@@ -112,7 +112,7 @@ export function PositionsKpis({ loading, tab, pricing, totalsProfitTone, totalsP
           {loading ? (
             <SkeletonBlock variant="text" height={40} width="60%" />
           ) : (
-            <KpiValue variant="h4" tone={totalsPctTone}>
+            <KpiValue variant="inherit" tone={totalsPctTone}>
               {pricing.totalProfitPctKnown.toFixed(2)}%
             </KpiValue>
           )}

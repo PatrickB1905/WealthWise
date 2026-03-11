@@ -14,7 +14,7 @@ import {
   NewsMetaSpacer,
   NewsOpenIconBoxMobile,
   NewsOpenLinkDesktop,
-} from '@shared/ui';
+} from './news.styles';
 
 import type { Article } from '../types/news';
 import { ageLabel, formatDate } from '../types/news';

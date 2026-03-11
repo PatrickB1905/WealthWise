@@ -45,7 +45,6 @@ const HomePage: React.FC = () => {
             closeNavMenu={closeNavMenu}
             onNav={onNav}
             onNavAndClose={onNavAndClose}
-            mobileMenuPaperSx={styles.mobileMenuPaperSx}
           />
         }
       />

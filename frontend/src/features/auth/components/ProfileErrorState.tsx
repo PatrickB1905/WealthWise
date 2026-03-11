@@ -1,7 +1,7 @@
 import React from 'react';
 import Alert from '@mui/material/Alert';
 
-import { StyledContainer } from '@shared/ui/layout/Styled';
+import { StyledContainer } from '@shared/ui';
 
 type Props = { message: string };
 

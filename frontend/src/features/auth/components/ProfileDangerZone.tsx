@@ -4,7 +4,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import DeleteForeverRoundedIcon from '@mui/icons-material/DeleteForeverRounded';
 
-import { ProfileDangerButton, ProfileDangerCard } from '@shared/ui/layout/Styled';
+import { ProfileDangerButton, ProfileDangerCard } from './profile.styles';
 
 type Props = {
   onDeleteClick: () => void;

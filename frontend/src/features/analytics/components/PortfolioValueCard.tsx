@@ -11,7 +11,8 @@ import {
 
 import { CHART_Y_AXIS_WIDTH } from '../constants';
 import type { PerformanceResponse } from '../types/analytics';
-import { AnalyticsChartFrame, PageCard, SectionContent, SectionHeader } from '@shared/ui';
+import { PageCard, SectionContent, SectionHeader } from '@shared/ui';
+import { AnalyticsChartFrame } from './analytics.styles';
 import { TitleWithTip } from './AnalyticsInfoTip';
 
 type ChartConfig = {
@@ -45,7 +46,7 @@ export const PortfolioValueCard: React.FC<Props> = ({ days, perf, chart }) => {
       <SectionContent>
         <AnalyticsChartFrame>
           <ResponsiveContainer>
-            <LineChart data={perf.points ?? []} margin={{ top: 10, right: 12, left: 6, bottom: 8 }}>
+            <LineChart data={perf.points ?? []} margin={{ top: 6, right: 8, left: 0, bottom: 4 }}>
               <CartesianGrid
                 stroke={chart.gridStroke}
                 strokeOpacity={0.6}
