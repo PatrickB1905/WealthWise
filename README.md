@@ -406,23 +406,23 @@ Once the platform is running and accessible in your browser, you can begin using
 
 ### 1. Create an Account
 
-![Register Page](docs/images/wealthwise-register-page-screenshot.png)
+![Register Page](docs/images/wealthwise-register-flow.gif)
 
 ### 2. Log In
 
-![Login Page](docs/images/wealthwise-login-page-screenshot.png)
+![Login Page](docs/images/wealthwise-login-flow.gif)
 
 ### 3. Add Portfolio Positions
 
-![Add Position](docs/images/wealthwise-add-position-dialog-screenshot.png)
+![Add Position](docs/images/wealthwise-add-position-flow.gif)
 
 ### 4. View Portfolio Analytics
 
-![Analytics Dashboard](docs/images/wealthwise-analytics-page-screenshot.png)
+![Analytics Dashboard](docs/images/wealthwise-analytics-flow.gif)
 
 ### 5. View Curated Financial News
 
-![News Feed](docs/images/wealthwise-news-page-screenshot.png)
+![News Feed](docs/images/wealthwise-news-flow.gif)
 
 ---
 
