@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { useAuth } from './useAuth';
-import { AuthContext, type AuthContextValue } from '../components/authContext';
+import { AuthContext, type AuthContextValue } from '../context/authContext';
 
 function Probe() {
   const { user } = useAuth();

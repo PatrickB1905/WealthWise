@@ -46,19 +46,19 @@ jest.mock('../hooks/useNewsPage', () => ({
   useNewsPage: () => mockUseNewsPage(),
 }));
 
-jest.mock('../components/NewsLoading', () => ({
+jest.mock('../components/states/NewsLoading', () => ({
   __esModule: true,
   default: () => <div>NewsLoading</div>,
 }));
-jest.mock('../components/NewsHeader', () => ({
+jest.mock('../components/feed/NewsHeader', () => ({
   __esModule: true,
   default: () => <div>NewsHeader</div>,
 }));
-jest.mock('../components/NewsArticles', () => ({
+jest.mock('../components/feed/NewsArticles', () => ({
   __esModule: true,
   default: ({ articles }: { articles: Article[] }) => <div>NewsArticles:{articles.length}</div>,
 }));
-jest.mock('../components/NewsEmptyState', () => ({
+jest.mock('../components/states/NewsEmptyState', () => ({
   __esModule: true,
   default: (props: EmptyStateProps) => (
     <div>
@@ -73,7 +73,7 @@ jest.mock('../components/NewsEmptyState', () => ({
     </div>
   ),
 }));
-jest.mock('../components/NewsErrorState', () => ({
+jest.mock('../components/states/NewsErrorState', () => ({
   __esModule: true,
   default: (props: ErrorStateProps) => (
     <div>
@@ -84,7 +84,7 @@ jest.mock('../components/NewsErrorState', () => ({
     </div>
   ),
 }));
-jest.mock('../components/NewsMobileStickyRefresh', () => ({
+jest.mock('../components/feed/NewsMobileStickyRefresh', () => ({
   __esModule: true,
   default: (props: StickyRefreshProps) => (
     <button onClick={props.onRefresh} disabled={props.isRefreshing}>

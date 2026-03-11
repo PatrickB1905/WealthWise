@@ -9,16 +9,16 @@ import portfolioScreenshotImg from '../../../assets/images/marketing/screenshots
 
 import { FEATURE_CARDS, FAQS, HIGHLIGHTS, STEPS, TRUST_ITEMS, VALUE_PROPS } from '../constants';
 import { useHomePage } from '../hooks/useHomePage';
-import { HomeTopNav } from '../components/HomeTopNav';
-import { HomeHeroSection } from '../components/HomeHeroSection';
-import { HomeValuePropsSection } from '../components/HomeValuePropsSection';
-import { HomeFeaturesSection } from '../components/HomeFeaturesSection';
-import { HomeHowItWorksSection } from '../components/HomeHowItWorksSection';
-import { HomeTrustSection } from '../components/HomeTrustSection';
-import { HomePlansSection } from '../components/HomePlansSection';
-import { HomeFaqSection } from '../components/HomeFaqSection';
-import { HomeCalloutSection } from '../components/HomeCalloutSection';
-import { HomeFooter } from '../components/HomeFooter';
+import { HomeTopNav } from '../components/marketing/HomeTopNav';
+import { HomeHeroSection } from '../components/marketing/HomeHeroSection';
+import { HomeValuePropsSection } from '../components/marketing/HomeValuePropsSection';
+import { HomeFeaturesSection } from '../components/marketing/HomeFeaturesSection';
+import { HomeHowItWorksSection } from '../components/marketing/HomeHowItWorksSection';
+import { HomeTrustSection } from '../components/marketing/HomeTrustSection';
+import { HomePlansSection } from '../components/marketing/HomePlansSection';
+import { HomeFaqSection } from '../components/marketing/HomeFaqSection';
+import { HomeCalloutSection } from '../components/marketing/HomeCalloutSection';
+import { HomeFooter } from '../components/marketing/HomeFooter';
 
 const HomePage: React.FC = () => {
   const nav = useNavigate();

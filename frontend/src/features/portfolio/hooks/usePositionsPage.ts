@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import API from '@shared/lib/axios';
+
 import { usePositionWS } from '@features/portfolio/hooks/usePositionWS';
-import { useQuotes, type RemoteQuote } from '@features/market-data/hooks/useQuotes';
-import type { InstrumentSearchResult } from '@features/market-data/api/marketDataClient';
-import { formatInstrumentInputValue } from '../components/InstrumentAutocomplete.utils';
+import { useQuotes, type RemoteQuote, type InstrumentSearchResult } from '@features/market-data';
+
+import { formatInstrumentInputValue } from '../components/forms/InstrumentAutocomplete.utils';
 
 import { EMPTY_POSITIONS } from '../constants/positions';
 import type { Position } from '../types/position';

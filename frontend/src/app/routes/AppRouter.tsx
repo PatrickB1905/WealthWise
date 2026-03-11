@@ -1,11 +1,11 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import DashboardLayout from '../../shared/ui/layout/DashboardLayout';
+import DashboardLayout from '@shared/ui/layout/DashboardLayout';
 
-import { HomePage } from '@features/home';
 import { AnalyticsPage } from '@features/analytics';
 import { LoginPage, ProfilePage, RegisterPage, ProtectedRoute } from '@features/auth';
+import { HomePage } from '@features/home';
 import { NewsPage } from '@features/news';
 import { PositionsPage } from '@features/portfolio';
 
@@ -24,7 +24,7 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/app/positions" replace />} />
+        <Route index element={<Navigate to="positions" replace />} />
         <Route path="positions" element={<PositionsPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="news" element={<NewsPage />} />

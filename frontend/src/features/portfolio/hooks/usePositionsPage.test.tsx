@@ -21,7 +21,7 @@ jest.mock('@features/portfolio/hooks/usePositionWS', () => ({
   usePositionWS: jest.fn(),
 }));
 
-jest.mock('@features/market-data/hooks/useQuotes', () => ({
+jest.mock('@features/market-data', () => ({
   __esModule: true,
   useQuotes: jest.fn(() => ({
     data: [],

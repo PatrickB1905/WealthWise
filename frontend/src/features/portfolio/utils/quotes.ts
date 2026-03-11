@@ -1,4 +1,4 @@
-import type { RemoteQuote } from '@features/market-data/hooks/useQuotes';
+import type { RemoteQuote } from '@features/market-data';
 import { QUOTE_STALE_THRESHOLD_SEC } from '../constants/positions';
 import { isFiniteNumber } from './format';
 

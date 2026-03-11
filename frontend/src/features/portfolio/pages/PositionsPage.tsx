@@ -15,15 +15,15 @@ import {
 } from '@shared/ui';
 
 import { usePositionsPage } from '../hooks/usePositionsPage';
-import { PositionsKpis } from '../components/PositionsKpis';
-import { PositionsEmptyState } from '../components/PositionsEmptyState';
-import { PositionsSkeletonTable } from '../components/PositionsSkeletonTable';
-import { PositionsMobileList } from '../components/PositionsMobileList';
-import { PositionsDesktopTable } from '../components/PositionsDesktopTable';
-import { PositionsTotalsCard } from '../components/PositionsTotalsCard';
-import { PositionDialogs } from '../components/PositionDialogs';
-import { PositionsToast } from '../components/PositionsToast';
-import { PositionsPrimaryButton, PositionsTabButtonGroup } from '../components/PositionDialogs.styles';
+import { PositionsKpis } from '../components/summary/PositionsKpis';
+import { PositionsEmptyState } from '../components/lists/PositionsEmptyState';
+import { PositionsSkeletonTable } from '../components/lists/PositionsSkeletonTable';
+import { PositionsMobileList } from '../components/lists/PositionsMobileList';
+import { PositionsDesktopTable } from '../components/lists/PositionsDesktopTable';
+import { PositionsTotalsCard } from '../components/lists/PositionsTotalsCard';
+import { PositionDialogs } from '../components/dialogs/PositionDialogs';
+import { PositionsToast } from '../components/summary/PositionsToast';
+import { PositionsPrimaryButton, PositionsTabButtonGroup } from '../components/dialogs/PositionDialogs.styles';
 
 const PositionsPage: React.FC = () => {
   const theme = useTheme();

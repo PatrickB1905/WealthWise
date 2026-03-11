@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
@@ -11,11 +11,6 @@ import {
 } from '../styles/app-shell.styles';
 import { ROUTE_TRANSITION_MS, dashboardTitleFromPath } from './styled.utils';
 
-import { AnalyticsPage } from '@features/analytics';
-import { NewsPage } from '@features/news';
-import { PositionsPage } from '@features/portfolio';
-import { ProfilePage } from '@features/auth';
-
 const DashboardLayout: React.FC = () => {
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,8 +20,8 @@ const DashboardLayout: React.FC = () => {
     setRouteLoading(true);
     setMobileOpen(false);
 
-    const t = window.setTimeout(() => setRouteLoading(false), ROUTE_TRANSITION_MS);
-    return () => window.clearTimeout(t);
+    const timeoutId = window.setTimeout(() => setRouteLoading(false), ROUTE_TRANSITION_MS);
+    return () => window.clearTimeout(timeoutId);
   }, [pathname]);
 
   const title = useMemo(() => dashboardTitleFromPath(pathname), [pathname]);
@@ -40,13 +35,7 @@ const DashboardLayout: React.FC = () => {
         {routeLoading ? <RouteLinearProgress /> : null}
 
         <ContentScrollArea>
-          <Routes>
-            <Route path="/" element={<Navigate to="positions" replace />} />
-            <Route path="positions" element={<PositionsPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="news" element={<NewsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-          </Routes>
+          <Outlet />
         </ContentScrollArea>
       </MainContent>
     </DashboardContainer>

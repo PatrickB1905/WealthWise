@@ -19,35 +19,35 @@ jest.mock('@mui/material/useMediaQuery', () => ({
   default: () => mockUseMediaQuery(),
 }));
 
-jest.mock('../components/PositionsKpis', () => ({
+jest.mock('../components/summary/PositionsKpis', () => ({
   __esModule: true,
   PositionsKpis: () => <div>PositionsKpis</div>,
 }));
-jest.mock('../components/PositionsEmptyState', () => ({
+jest.mock('../components/lists/PositionsEmptyState', () => ({
   __esModule: true,
   PositionsEmptyState: () => <div>PositionsEmptyState</div>,
 }));
-jest.mock('../components/PositionsSkeletonTable', () => ({
+jest.mock('../components/lists/PositionsSkeletonTable', () => ({
   __esModule: true,
   PositionsSkeletonTable: () => <div>PositionsSkeletonTable</div>,
 }));
-jest.mock('../components/PositionsMobileList', () => ({
+jest.mock('../components/lists/PositionsMobileList', () => ({
   __esModule: true,
   PositionsMobileList: () => <div>PositionsMobileList</div>,
 }));
-jest.mock('../components/PositionsDesktopTable', () => ({
+jest.mock('../components/lists/PositionsDesktopTable', () => ({
   __esModule: true,
   PositionsDesktopTable: () => <div>PositionsDesktopTable</div>,
 }));
-jest.mock('../components/PositionsTotalsCard', () => ({
+jest.mock('../components/lists/PositionsTotalsCard', () => ({
   __esModule: true,
   PositionsTotalsCard: () => <div>PositionsTotalsCard</div>,
 }));
-jest.mock('../components/PositionDialogs', () => ({
+jest.mock('../components/dialogs/PositionDialogs', () => ({
   __esModule: true,
   PositionDialogs: () => <div>PositionDialogs</div>,
 }));
-jest.mock('../components/PositionsToast', () => ({
+jest.mock('../components/summary/PositionsToast', () => ({
   __esModule: true,
   PositionsToast: () => <div>PositionsToast</div>,
 }));

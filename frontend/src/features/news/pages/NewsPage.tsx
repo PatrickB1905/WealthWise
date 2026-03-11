@@ -6,15 +6,15 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { CenteredBox, PageCard, SectionContent, SectionHeader, StyledContainer } from '@shared/ui';
-import { NewsContent } from '../components/news.styles';
+import { NewsContent } from '../styles/news.styles';
 
 import { useNewsPage } from '../hooks/useNewsPage';
-import NewsLoading from '../components/NewsLoading';
-import NewsHeader from '../components/NewsHeader';
-import NewsArticles from '../components/NewsArticles';
-import NewsEmptyState from '../components/NewsEmptyState';
-import NewsErrorState from '../components/NewsErrorState';
-import NewsMobileStickyRefresh from '../components/NewsMobileStickyRefresh';
+import NewsLoading from '../components/states/NewsLoading';
+import NewsHeader from '../components/feed/NewsHeader';
+import NewsArticles from '../components/feed/NewsArticles';
+import NewsEmptyState from '../components/states/NewsEmptyState';
+import NewsErrorState from '../components/states/NewsErrorState';
+import NewsMobileStickyRefresh from '../components/feed/NewsMobileStickyRefresh';
 
 const NewsPage: React.FC = () => {
   const {

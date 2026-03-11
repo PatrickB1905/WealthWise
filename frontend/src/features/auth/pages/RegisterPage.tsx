@@ -1,10 +1,10 @@
 import React from 'react';
 
-import { HeroOverlay, HeroSection } from '../components/auth.styles';
+import { HeroOverlay, HeroSection } from '../styles/auth.styles';
 
 import { useRegisterPage } from '../hooks/useRegisterPage';
-import { RegisterTopNav } from '../components/RegisterTopNav';
-import { RegisterCard } from '../components/RegisterCard';
+import { RegisterTopNav } from '../components/auth-flow/RegisterTopNav';
+import { RegisterCard } from '../components/auth-flow/RegisterCard';
 
 const RegisterPage: React.FC = () => {
   const vm = useRegisterPage();

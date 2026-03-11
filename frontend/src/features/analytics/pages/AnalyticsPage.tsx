@@ -13,13 +13,13 @@ import {
   EmptyStateText,
 } from '@shared/ui';
 import { useAnalyticsPage } from '../hooks/useAnalyticsPage';
-import { AnalyticsLoading } from '../components/AnalyticsLoading';
-import { AnalyticsControls } from '../components/AnalyticsControls';
-import { AnalyticsTopKpis } from '../components/AnalyticsTopKpis';
-import { AnalyticsRiskKpis } from '../components/AnalyticsRiskKpis';
-import { ProfitHistoryCard } from '../components/ProfitHistoryCard';
-import { PortfolioValueCard } from '../components/PortfolioValueCard';
-import { HoldingsAllocationCard } from '../components/HoldingsAllocationCard';
+import { AnalyticsLoading } from '../components/states/AnalyticsLoading';
+import { AnalyticsControls } from '../components/controls/AnalyticsControls';
+import { AnalyticsTopKpis } from '../components/summary/AnalyticsTopKpis';
+import { AnalyticsRiskKpis } from '../components/summary/AnalyticsRiskKpis';
+import { ProfitHistoryCard } from '../components/cards/ProfitHistoryCard';
+import { PortfolioValueCard } from '../components/cards/PortfolioValueCard';
+import { HoldingsAllocationCard } from '../components/cards/HoldingsAllocationCard';
 
 const AnalyticsPage: React.FC = () => {
   const vm = useAnalyticsPage();

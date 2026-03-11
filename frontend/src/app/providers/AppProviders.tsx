@@ -3,7 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 
-import theme from '../../shared/theme';
+import theme from '@shared/theme';
 import { AuthProvider } from '@features/auth';
 import { QueryProvider } from './QueryProvider';
 

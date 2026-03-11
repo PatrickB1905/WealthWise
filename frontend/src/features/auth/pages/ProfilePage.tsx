@@ -1,17 +1,17 @@
 import React from 'react';
 
 import { PageCard, SectionDivider, StyledContainer } from '@shared/ui';
-import { ProfileContent, ProfileTwoColGrid } from '../components/profile.styles';
+import { ProfileContent, ProfileTwoColGrid } from '../styles/profile.styles';
 
 import { useProfilePage } from '../hooks/useProfilePage';
-import { ProfileLoadingState } from '../components/ProfileLoadingState';
-import { ProfileErrorState } from '../components/ProfileErrorState';
-import { ProfileHeader } from '../components/ProfileHeader';
-import { ProfileIdentityCardBlock } from '../components/ProfileIdentityCard';
-import { ProfileEmailCard } from '../components/ProfileEmailCard';
-import { ProfilePasswordCard } from '../components/ProfilePasswordCard';
-import { ProfileDangerZone } from '../components/ProfileDangerZone';
-import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
+import { ProfileLoadingState } from '../components/common/ProfileLoadingState';
+import { ProfileErrorState } from '../components/common/ProfileErrorState';
+import { ProfileHeader } from '../components/profile/ProfileHeader';
+import { ProfileIdentityCardBlock } from '../components/profile/ProfileIdentityCard';
+import { ProfileEmailCard } from '../components/profile/ProfileEmailCard';
+import { ProfilePasswordCard } from '../components/profile/ProfilePasswordCard';
+import { ProfileDangerZone } from '../components/profile/ProfileDangerZone';
+import { DeleteAccountDialog } from '../components/profile/DeleteAccountDialog';
 
 const ProfilePage: React.FC = () => {
   const vm = useProfilePage();
