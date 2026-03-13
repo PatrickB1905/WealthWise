@@ -1,469 +1,125 @@
 import React from 'react';
-import dayjs from 'dayjs';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 
-import API from '@shared/lib/axios';
+import { makeTestQueryClient } from '@test/testQueryClient';
 import { usePositionsPage } from './usePositionsPage';
+import { closedPosition, defaultQuote, openPosition } from './__mocks__/positionsFixtures';
+
+const mockApiGet = jest.fn();
+const mockApiPost = jest.fn();
+const mockApiPut = jest.fn();
+const mockApiDelete = jest.fn();
+const mockUseQuotes = jest.fn();
+const mockUsePositionWS = jest.fn();
 
 jest.mock('@shared/lib/axios', () => ({
   __esModule: true,
   default: {
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    delete: jest.fn(),
+    get: (...args: unknown[]) => mockApiGet(...args),
+    post: (...args: unknown[]) => mockApiPost(...args),
+    put: (...args: unknown[]) => mockApiPut(...args),
+    delete: (...args: unknown[]) => mockApiDelete(...args),
   },
 }));
 
 jest.mock('@features/portfolio/hooks/usePositionWS', () => ({
-  __esModule: true,
-  usePositionWS: jest.fn(),
+  usePositionWS: () => mockUsePositionWS(),
 }));
 
 jest.mock('@features/market-data', () => ({
-  __esModule: true,
-  useQuotes: jest.fn(() => ({
-    data: [],
-    isLoading: false,
-  })),
+  useQuotes: (...args: unknown[]) => mockUseQuotes(...args),
 }));
 
 function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
+  const queryClient = makeTestQueryClient();
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 }
 
-const mockedApi = API as jest.Mocked<typeof API>;
-
-const selectedInstrument = {
-  symbol: 'AAPL',
-  name: 'Apple Inc.',
-  exchange: 'NASDAQ',
-  assetType: 'EQUITY',
-  currency: 'USD',
-  logoUrl: 'https://logo.example/aapl.png',
-};
+function renderVm(isMobile = false) {
+  return renderHook(() => usePositionsPage(isMobile), {
+    wrapper: createWrapper(),
+  });
+}
 
 describe('usePositionsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedApi.get.mockResolvedValue({ data: [] } as never);
-    mockedApi.post.mockResolvedValue({
-      data: {
-        id: 1,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 10,
-        buyDate: new Date().toISOString(),
-      },
-    } as never);
-    mockedApi.put.mockResolvedValue({ data: {} } as never);
-    mockedApi.delete.mockResolvedValue({} as never);
-  });
 
-  it('requires a ticker before adding a position', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
+    mockApiGet.mockImplementation((url: string) => {
+      if (url === '/positions?status=closed') {
+        return Promise.resolve({ data: [closedPosition] });
+      }
 
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
+      return Promise.resolve({ data: [openPosition] });
     });
 
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.tickerError).toBe('Please select a valid ticker from the list');
-    });
-    expect(mockedApi.post).not.toHaveBeenCalled();
-  });
-
-  it('requires quantity before adding a position', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
-    });
-
-    act(() => {
-      result.current.setSelectedInstrument(selectedInstrument);
-      result.current.setNewTicker('AAPL - Apple Inc.');
-    });
-
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.quantityError).toBe('Quantity must be greater than 0');
-    });
-    expect(mockedApi.post).not.toHaveBeenCalled();
-  });
-
-  it('requires buy price before adding a position', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
-    });
-
-    act(() => {
-      result.current.setSelectedInstrument(selectedInstrument);
-      result.current.setNewTicker('AAPL - Apple Inc.');
-      result.current.setNewQuantity('1');
-    });
-
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.buyPriceError).toBe('Buy price is required');
-    });
-    expect(mockedApi.post).not.toHaveBeenCalled();
-  });
-
-  it('rejects a non-positive buy price when adding a position', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
-    });
-
-    act(() => {
-      result.current.setSelectedInstrument(selectedInstrument);
-      result.current.setNewTicker('AAPL - Apple Inc.');
-      result.current.setNewQuantity('1');
-      result.current.setNewBuyPrice('0');
-    });
-
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.buyPriceError).toBe('Buy price must be greater than 0');
-    });
-    expect(mockedApi.post).not.toHaveBeenCalled();
-  });
-
-  it('requires buy date before adding a position and sets inline error', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
-    });
-
-    act(() => {
-      result.current.setSelectedInstrument(selectedInstrument);
-      result.current.setNewTicker('AAPL - Apple Inc.');
-      result.current.setNewQuantity('1');
-      result.current.setNewBuyPrice('10');
-      result.current.setNewBuyDate(null);
-    });
-
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.buyDateError).toBe('Buy date is required');
-    });
-    expect(mockedApi.post).not.toHaveBeenCalled();
-  });
-
-  it('requires a valid buy date before adding a position and sets inline error', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-    const invalidDate = dayjs('not-a-real-date');
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
-    });
-
-    act(() => {
-      result.current.setSelectedInstrument(selectedInstrument);
-      result.current.setNewTicker('AAPL - Apple Inc.');
-      result.current.setNewQuantity('1');
-      result.current.setNewBuyPrice('10');
-      result.current.setNewBuyDate(invalidDate);
-    });
-
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.buyDateError).toBe('Enter a valid buy date');
-    });
-    expect(mockedApi.post).not.toHaveBeenCalled();
-  });
-
-  it('allows fractional quantity when the value is greater than 0', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openAddDialog();
-    });
-
-    act(() => {
-      result.current.setSelectedInstrument(selectedInstrument);
-      result.current.setNewTicker('AAPL - Apple Inc.');
-      result.current.setNewQuantity('0.1');
-      result.current.setNewBuyPrice('10');
-    });
-
-    act(() => {
-      result.current.onAddSubmit();
-    });
-
-    await waitFor(() => {
-      expect(mockedApi.post).toHaveBeenCalledWith(
-        '/positions',
-        expect.objectContaining({
-          ticker: 'AAPL',
-          quantity: 0.1,
-          buyPrice: 10,
-        }),
-      );
+    mockUseQuotes.mockReturnValue({
+      data: [defaultQuote],
+      isLoading: false,
     });
   });
 
-  it('requires buy price when editing a position', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openEditDialog({
-        id: 7,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 12,
-        buyDate: new Date().toISOString(),
-      });
-    });
-
-    act(() => {
-      result.current.setNewBuyPrice('');
-    });
-
-    act(() => {
-      result.current.onEditSubmit();
-    });
+  it('loads positions and quote-derived pricing', async () => {
+    const { result } = renderVm();
 
     await waitFor(() => {
-      expect(result.current.buyPriceError).toBe('Buy price is required');
+      expect(result.current.positions).toHaveLength(1);
     });
-    expect(mockedApi.put).not.toHaveBeenCalled();
+
+    expect(mockUsePositionWS).toHaveBeenCalled();
+    expect(result.current.pricing.totalInvested).toBe(1000);
+    expect(result.current.pricing.totalProfitKnown).toBe(100);
+    expect(result.current.pricing.totalProfitPctKnown).toBe(10);
+    expect(result.current.totalsProfitTone).toBe('positive');
+    expect(result.current.totalsPctTone).toBe('positive');
+    expect(result.current.headerSubtitle).toContain('Live portfolio view');
+    expect(result.current.listSubtitle).toContain('Live pricing');
+    expect(result.current.isMobile).toBe(false);
   });
 
-  it('requires buy date when editing a position and sets inline error', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
+  it('switches to closed tab and derives realized totals', async () => {
+    const { result } = renderVm();
 
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openEditDialog({
-        id: 7,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 12,
-        buyDate: new Date().toISOString(),
-      });
+    await waitFor(() => {
+      expect(result.current.positions).toHaveLength(1);
     });
 
     act(() => {
-      result.current.setNewBuyDate(null);
-    });
-
-    act(() => {
-      result.current.onEditSubmit();
+      result.current.setTab('closed');
     });
 
     await waitFor(() => {
-      expect(result.current.buyDateError).toBe('Buy date is required');
+      expect(mockApiGet).toHaveBeenCalledWith('/positions?status=closed');
     });
-    expect(mockedApi.put).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(result.current.tab).toBe('closed');
+      expect(result.current.positions[0]?.ticker).toBe('MSFT');
+    });
+
+    expect(result.current.pricing.totalInvested).toBe(1000);
+    expect(result.current.pricing.totalProfitKnown).toBe(100);
+    expect(result.current.pricing.totalProfitPctKnown).toBe(10);
+    expect(result.current.headerSubtitle).toContain('Closed trades');
+    expect(result.current.listSubtitle).toContain('Sell prices');
   });
 
-  it('requires a valid buy date when editing a position and sets inline error', async () => {
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-    const invalidDate = dayjs('not-a-real-date');
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openEditDialog({
-        id: 7,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 12,
-        buyDate: new Date().toISOString(),
-      });
+  it('returns loading while quotes are loading in open tab', async () => {
+    mockUseQuotes.mockReturnValue({
+      data: [],
+      isLoading: true,
     });
 
-    act(() => {
-      result.current.setNewBuyDate(invalidDate);
-    });
-
-    act(() => {
-      result.current.onEditSubmit();
-    });
+    const { result } = renderVm();
 
     await waitFor(() => {
-      expect(result.current.buyDateError).toBe('Enter a valid buy date');
-    });
-    expect(mockedApi.put).not.toHaveBeenCalled();
-  });
-
-  it('requires sell price before closing a position', async () => {
-    mockedApi.get.mockResolvedValueOnce({
-      data: [
-        {
-          id: 1,
-          ticker: 'AAPL',
-          quantity: 1,
-          buyPrice: 10,
-          buyDate: new Date().toISOString(),
-        },
-      ],
-    } as never);
-
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openCloseDialog({
-        id: 1,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 10,
-        buyDate: new Date().toISOString(),
-      });
+      expect(result.current.positions).toHaveLength(1);
     });
 
-    act(() => {
-      result.current.setNewSellPrice('');
-    });
-
-    act(() => {
-      result.current.onCloseSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.sellPriceError).toBe('Sell price is required');
-    });
-    expect(mockedApi.put).not.toHaveBeenCalled();
-  });
-
-  it('allows zero as a sell price when closing a position', async () => {
-    mockedApi.get.mockResolvedValueOnce({
-      data: [
-        {
-          id: 1,
-          ticker: 'AAPL',
-          quantity: 1,
-          buyPrice: 10,
-          buyDate: new Date().toISOString(),
-        },
-      ],
-    } as never);
-
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openCloseDialog({
-        id: 1,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 10,
-        buyDate: new Date().toISOString(),
-      });
-    });
-
-    act(() => {
-      result.current.setNewSellPrice('0');
-    });
-
-    act(() => {
-      result.current.onCloseSubmit();
-    });
-
-    await waitFor(() => {
-      expect(mockedApi.put).toHaveBeenCalledWith(
-        '/positions/1/close',
-        expect.objectContaining({
-          sellPrice: 0,
-        }),
-      );
-    });
-  });
-
-  it('requires a valid sell date before closing a position', async () => {
-    mockedApi.get.mockResolvedValueOnce({
-      data: [
-        {
-          id: 1,
-          ticker: 'AAPL',
-          quantity: 1,
-          buyPrice: 10,
-          buyDate: new Date().toISOString(),
-        },
-      ],
-    } as never);
-
-    const { result } = renderHook(() => usePositionsPage(false), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
-
-    act(() => {
-      result.current.openCloseDialog({
-        id: 1,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 10,
-        buyDate: new Date().toISOString(),
-      });
-    });
-
-    act(() => {
-      result.current.setNewSellPrice('5');
-      result.current.setNewSellDate(null);
-    });
-
-    act(() => {
-      result.current.onCloseSubmit();
-    });
-
-    await waitFor(() => {
-      expect(result.current.sellDateError).toBe('Sell date is required');
-    });
-    expect(mockedApi.put).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(true);
   });
 });

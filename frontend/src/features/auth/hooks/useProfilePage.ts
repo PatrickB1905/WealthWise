@@ -7,38 +7,12 @@ import { useAuth } from '@features/auth';
 
 import { PROFILE_ENDPOINTS, PROFILE_QUERY_KEY } from '../constants';
 import type { BannerMsg, Profile } from '../types/profile';
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-export function initialsFromName(firstName?: string, lastName?: string): string {
-  const a = (firstName ?? '').trim();
-  const b = (lastName ?? '').trim();
-  const i1 = a ? a[0].toUpperCase() : '';
-  const i2 = b ? b[0].toUpperCase() : '';
-  const out = `${i1}${i2}`.trim();
-  return out || 'U';
-}
-
-function computeUpdatedLabel(updatedAtMs?: number): string {
-  const ms = updatedAtMs;
-  if (!ms) return '—';
-  const sec = Math.max(0, (Date.now() - ms) / 1000);
-  if (sec < 60) return `${Math.round(sec)}s ago`;
-  const mins = Math.round(sec / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  return `${hrs}h ago`;
-}
-
-function isValidEmail(value: string): boolean {
-  const email = value.trim();
-  if (!email) return false;
-  return email.includes('@') && email.includes('.');
-}
+import {
+  computeUpdatedLabel,
+  formatDateTime,
+  initialsFromName,
+  isValidEmail,
+} from './profilePage.helpers';
 
 export function useProfilePage() {
   const { logout } = useAuth();
@@ -70,8 +44,8 @@ export function useProfilePage() {
 
   const updateEmail = useMutation<{ email: string }, Error, { email: string }>({
     mutationFn: async (vars) => {
-      const res = await API.put<{ email: string }>(PROFILE_ENDPOINTS.updateEmail, vars);
-      return res.data;
+      const response = await API.put<{ email: string }>(PROFILE_ENDPOINTS.updateEmail, vars);
+      return response.data;
     },
     onSuccess: (data) => {
       setEmailMsg({ type: 'success', text: `Email updated to ${data.email}` });
@@ -103,7 +77,9 @@ export function useProfilePage() {
       await API.delete(PROFILE_ENDPOINTS.deleteAccount);
     },
     onSuccess: () => logout(),
-    onError: (err: unknown) => setDeleteError(getErrorMessage(err, 'Failed to delete account')),
+    onError: (err: unknown) => {
+      setDeleteError(getErrorMessage(err, 'Failed to delete account'));
+    },
   });
 
   const firstName = profile?.firstName ?? '';

@@ -1,5 +1,4 @@
 import Avatar from '@mui/material/Avatar';
-import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -55,7 +54,7 @@ export function PositionsDesktopTable({
   const totalsPctTone = toneFromNumber(pricing.totalProfitPctKnown);
 
   return (
-    <PositionsTableContainer component={Paper}>
+    <PositionsTableContainer>
       <Table size="small" stickyHeader>
         <StickyTableHead>
           <TableRow>

@@ -1,190 +1,38 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import dayjs, { type Dayjs } from 'dayjs';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import API from '@shared/lib/axios';
 
 import { usePositionWS } from '@features/portfolio/hooks/usePositionWS';
-import { useQuotes, type RemoteQuote, type InstrumentSearchResult } from '@features/market-data';
-
-import { formatInstrumentInputValue } from '../components/forms/InstrumentAutocomplete.utils';
+import { useQuotes, type RemoteQuote } from '@features/market-data';
 
 import { EMPTY_POSITIONS } from '../constants/positions';
 import type { Position } from '../types/position';
-import { isFiniteNumber, normalizeSymbol, toneFromNumber } from '../utils/format';
+import { normalizeSymbol } from '../utils/format';
 
-type Tab = 'open' | 'closed';
-
-export type ToastSeverity = 'success' | 'error' | 'info';
-
-export type ToastState = {
-  open: boolean;
-  message: string;
-  severity: ToastSeverity;
-};
-
-export type PricingTotals = {
-  totalInvested: number;
-  totalProfitKnown: number;
-  totalProfitPctKnown: number;
-  missingQuotes: number;
-};
-
-export type PositionsPageVM = {
-  // View state
-  tab: Tab;
-  setTab: (t: Tab) => void;
-
-  // Data
-  positions: Position[];
-  quotesMap: Record<string, RemoteQuote>;
-  loading: boolean;
-  errorText?: string;
-
-  // Derived
-  pricing: PricingTotals;
-  totalsProfitTone: ReturnType<typeof toneFromNumber>;
-  totalsPctTone: ReturnType<typeof toneFromNumber>;
-  headerSubtitle: string;
-  listSubtitle: string;
-  showQuoteAlert: boolean;
-  isMobile: boolean;
-
-  // Dialogs
-  addOpen: boolean;
-  closeOpen: boolean;
-  editOpen: boolean;
-  deleteOpen: boolean;
-  selected: Position | null;
-
-  // Form fields
-  newTicker: string;
-  selectedInstrument: InstrumentSearchResult | null;
-  newQuantity: string;
-  newBuyPrice: string;
-  newBuyDate: Dayjs | null;
-  newSellPrice: string;
-  newSellDate: Dayjs | null;
-  tickerError: string;
-  quantityError: string;
-  buyPriceError: string;
-  buyDateError: string;
-  sellPriceError: string;
-  sellDateError: string;
-
-  // Form setters
-  setNewTicker: (v: string) => void;
-  setSelectedInstrument: (instrument: InstrumentSearchResult | null) => void;
-  setNewQuantity: (v: string) => void;
-  setNewBuyPrice: (v: string) => void;
-  setNewBuyDate: (v: Dayjs | null) => void;
-  setNewSellPrice: (v: string) => void;
-  setNewSellDate: (v: Dayjs | null) => void;
-
-  // Open dialog actions
-  openAddDialog: () => void;
-  openCloseDialog: (p: Position) => void;
-  openEditDialog: (p: Position) => void;
-  openDeleteDialog: (p: Position) => void;
-  closeAddDialog: () => void;
-  closeCloseDialog: () => void;
-  closeEditDialog: () => void;
-  closeDeleteDialog: () => void;
-
-  // Submit actions
-  onAddSubmit: () => void;
-  onCloseSubmit: () => void;
-  onEditSubmit: () => void;
-  onDeleteConfirm: () => void;
-
-  // Pending flags
-  isAdding: boolean;
-  isClosing: boolean;
-  isEditing: boolean;
-  isDeleting: boolean;
-
-  // Toast
-  toast: ToastState;
-  closeToast: () => void;
-};
-
-const QUANTITY_ERROR_MESSAGE = 'Quantity must be greater than 0';
-const BUY_PRICE_REQUIRED_MESSAGE = 'Buy price is required';
-const BUY_PRICE_POSITIVE_MESSAGE = 'Buy price must be greater than 0';
-const BUY_DATE_REQUIRED_MESSAGE = 'Buy date is required';
-const BUY_DATE_INVALID_MESSAGE = 'Enter a valid buy date';
-const SELL_PRICE_REQUIRED_MESSAGE = 'Sell price is required';
-const SELL_DATE_REQUIRED_MESSAGE = 'Sell date is required';
-const SELL_DATE_INVALID_MESSAGE = 'Enter a valid sell date';
-const TICKER_REQUIRED_MESSAGE = 'Please select a valid ticker from the list';
-
-function parsePositiveNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
-  }
-
-  return parsed;
-}
-
-function parseRequiredNumberAllowZero(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-
-  return parsed;
-}
-
-function extractApiErrorDetail(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-
-  const response = (error as { response?: { data?: unknown } }).response;
-  const data = response?.data;
-
-  if (typeof data === 'object' && data !== null && 'detail' in data) {
-    const detail = (data as { detail?: unknown }).detail;
-    if (typeof detail === 'string' && detail.trim()) {
-      return detail.trim();
-    }
-  }
-
-  return undefined;
-}
+import { usePositionDialogs } from './usePositionDialogs';
+import { usePositionForm } from './usePositionForm';
+import { usePositionMutations } from './usePositionMutations';
+import {
+  validateBuyDate,
+  validateBuyPrice,
+  validateQuantity,
+  validateSellDate,
+  validateSellPrice,
+  validateTicker,
+} from './usePositionValidation';
+import { usePositionsPricing } from './usePositionsPricing';
+import { usePositionsQuoteAlert } from './usePositionsQuoteAlert';
+import type { PositionsPageVM, ToastSeverity, ToastState, Tab } from './usePositionsPage.types';
 
 export function usePositionsPage(isMobile: boolean): PositionsPageVM {
   usePositionWS();
-  const qc = useQueryClient();
 
+  const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('open');
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [closeOpen, setCloseOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selected, setSelected] = useState<Position | null>(null);
-
-  const [newTicker, setNewTicker] = useState('');
-  const [selectedInstrument, setSelectedInstrument] = useState<InstrumentSearchResult | null>(null);
-  const [newQuantity, setNewQuantity] = useState('');
-  const [newBuyPrice, setNewBuyPrice] = useState('');
-  const [newBuyDate, setNewBuyDate] = useState<Dayjs | null>(dayjs());
-  const [newSellPrice, setNewSellPrice] = useState('');
-  const [newSellDate, setNewSellDate] = useState<Dayjs | null>(dayjs());
-  const [tickerError, setTickerError] = useState('');
-  const [quantityError, setQuantityError] = useState('');
-  const [buyPriceError, setBuyPriceError] = useState('');
-  const [buyDateError, setBuyDateError] = useState('');
-  const [sellPriceError, setSellPriceError] = useState('');
-  const [sellDateError, setSellDateError] = useState('');
+  const dialogs = usePositionDialogs();
+  const form = usePositionForm();
 
   const [toast, setToast] = useState<ToastState>({
     open: false,
@@ -196,7 +44,7 @@ export function usePositionsPage(isMobile: boolean): PositionsPageVM {
     setToast({ open: true, message, severity });
   };
 
-  const closeToast = () => setToast((t) => ({ ...t, open: false }));
+  const closeToast = () => setToast((prev) => ({ ...prev, open: false }));
 
   const positionsQuery = useQuery<Position[], Error>({
     queryKey: ['positions', tab],
@@ -223,487 +71,165 @@ export function usePositionsPage(isMobile: boolean): PositionsPageVM {
     return map;
   }, [quotesArray]);
 
-  const pricing = useMemo<PricingTotals>(() => {
-    let invested = 0;
-    let profitKnown = 0;
-    let missingQuotes = 0;
+  const pricingState = usePositionsPricing({
+    positions,
+    quotesMap,
+    tab,
+  });
 
-    for (const position of positions) {
-      const cost = position.buyPrice * position.quantity;
-      invested += cost;
+  const showQuoteAlert = usePositionsQuoteAlert({
+    tab,
+    quotesLoading,
+    missingQuotes: pricingState.pricing.missingQuotes,
+  });
 
-      if (tab === 'closed') {
-        const sellPrice = isFiniteNumber(position.sellPrice) ? position.sellPrice : position.buyPrice;
-        profitKnown += sellPrice * position.quantity - cost;
-        continue;
-      }
-
-      const quote = quotesMap[normalizeSymbol(position.ticker)];
-      if (!quote || !isFiniteNumber(quote.currentPrice)) {
-        missingQuotes += 1;
-        continue;
-      }
-
-      profitKnown += quote.currentPrice * position.quantity - cost;
-    }
-
-    const profitPctKnown = invested ? (profitKnown / invested) * 100 : 0;
-
-    return {
-      totalInvested: invested,
-      totalProfitKnown: profitKnown,
-      totalProfitPctKnown: profitPctKnown,
-      missingQuotes,
-    };
-  }, [positions, quotesMap, tab]);
-
-  const totalsProfitTone = toneFromNumber(pricing.totalProfitKnown);
-  const totalsPctTone = toneFromNumber(pricing.totalProfitPctKnown);
-
-  const [showQuoteAlert, setShowQuoteAlert] = useState(false);
-
-  useEffect(() => {
-    if (tab !== 'open') {
-      setShowQuoteAlert(false);
-      return;
-    }
-
-    if (quotesLoading) {
-      setShowQuoteAlert(false);
-      return;
-    }
-
-    if (pricing.missingQuotes <= 0) {
-      setShowQuoteAlert(false);
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => setShowQuoteAlert(true), 2500);
-    return () => window.clearTimeout(timeoutId);
-  }, [pricing.missingQuotes, quotesLoading, tab]);
-
-  const headerSubtitle =
-    tab === 'open'
-      ? 'Live portfolio view with real-time quote updates.'
-      : 'Closed trades with realized profit/loss.';
-
-  const listSubtitle =
-    tab === 'open'
-      ? 'Live pricing, invested capital, and unrealized performance.'
-      : 'Sell prices, realized profit/loss, and trade outcomes.';
+  const mutations = usePositionMutations({
+    qc,
+    tab,
+    selected: dialogs.selected,
+    dialogs: {
+      setAddOpen: dialogs.setAddOpen,
+      setCloseOpen: dialogs.setCloseOpen,
+      setEditOpen: dialogs.setEditOpen,
+      setDeleteOpen: dialogs.setDeleteOpen,
+      setSelected: dialogs.setSelected,
+    },
+    form: {
+      setSelectedInstrument: form.setSelectedInstrument,
+      setNewTicker: form.setNewTicker,
+      setTickerError: form.setTickerError,
+    },
+    showToast,
+  });
 
   const loading = posLoading || (quotesLoading && tab === 'open');
   const errorText = posError?.message;
 
-  const addPosition = useMutation<
-    Position,
-    Error,
-    { ticker: string; quantity: number; buyPrice: number; buyDate?: string }
-  >({
-    mutationFn: (newPos) => API.post('/positions', newPos).then((r) => r.data as Position),
-    onSuccess: (created) => {
-      qc.invalidateQueries({ queryKey: ['positions', 'open'] });
-      setAddOpen(false);
-      setSelectedInstrument(null);
-      setNewTicker('');
-      showToast(`Added ${normalizeSymbol(created.ticker)} to your portfolio.`, 'success');
-    },
-    onError: (error) => {
-      const detail = extractApiErrorDetail(error);
-
-      if (detail && /ticker|symbol/i.test(detail)) {
-        setTickerError(detail);
-      }
-
-      showToast(detail ?? 'Could not add the position. Please try again.', 'error');
-    },
-  });
-
-  const closePosition = useMutation<
-    Position,
-    Error,
-    { id: number; sellPrice: number; sellDate?: string }
-  >({
-    mutationFn: (vars) =>
-      API.put(`/positions/${vars.id}/close`, {
-        sellPrice: vars.sellPrice,
-        sellDate: vars.sellDate,
-      }).then((r) => r.data as Position),
-    onSuccess: (updated) => {
-      qc.invalidateQueries({ queryKey: ['positions', 'open'] });
-      qc.invalidateQueries({ queryKey: ['positions', 'closed'] });
-      setCloseOpen(false);
-      setSelected(null);
-      showToast(`Closed ${normalizeSymbol(updated.ticker)} successfully.`, 'success');
-    },
-    onError: (error) => {
-      const detail = extractApiErrorDetail(error);
-      showToast(detail ?? 'Could not close the position. Please try again.', 'error');
-    },
-  });
-
-  const editPosition = useMutation<
-    Position,
-    Error,
-    {
-      id: number;
-      quantity: number;
-      buyPrice: number;
-      buyDate?: string;
-      sellPrice?: number;
-      sellDate?: string;
-    }
-  >({
-    mutationFn: (vars) => API.put(`/positions/${vars.id}`, vars).then((r) => r.data as Position),
-    onSuccess: (updated) => {
-      qc.invalidateQueries({ queryKey: ['positions', tab] });
-      setEditOpen(false);
-      setSelected(null);
-      showToast(`Updated ${normalizeSymbol(updated.ticker)} successfully.`, 'success');
-    },
-    onError: (error) => {
-      const detail = extractApiErrorDetail(error);
-      showToast(detail ?? 'Could not update the position. Please try again.', 'error');
-    },
-  });
-
-  const deletePosition = useMutation<void, Error, number>({
-    mutationFn: (id) => API.delete(`/positions/${id}`).then(() => undefined),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['positions', tab] });
-      const symbol = selected?.ticker ? normalizeSymbol(selected.ticker) : 'position';
-      setDeleteOpen(false);
-      setSelected(null);
-      showToast(`Deleted ${symbol} successfully.`, 'success');
-    },
-    onError: (error) => {
-      const detail = extractApiErrorDetail(error);
-      showToast(detail ?? 'Could not delete the position. Please try again.', 'error');
-    },
-  });
-
-  const validateTicker = (): string | null => {
-    if (!selectedInstrument) {
-      setTickerError(TICKER_REQUIRED_MESSAGE);
-      return null;
-    }
-
-    const normalizedSymbol = normalizeSymbol(selectedInstrument.symbol);
-    if (!normalizedSymbol) {
-      setTickerError(TICKER_REQUIRED_MESSAGE);
-      return null;
-    }
-
-    setTickerError('');
-    return normalizedSymbol;
+  const openAddDialog = () => {
+    form.resetAddForm();
+    dialogs.openAddDialog();
   };
 
-  const validateQuantity = (): number | null => {
-    const parsedQuantity = parsePositiveNumber(newQuantity);
-    if (parsedQuantity === null) {
-      setQuantityError(QUANTITY_ERROR_MESSAGE);
-      return null;
-    }
-
-    setQuantityError('');
-    return parsedQuantity;
+  const openCloseDialog = (position: Position) => {
+    dialogs.openCloseDialog(position);
+    form.prepareCloseForm();
   };
 
-  const validateBuyPrice = (): number | null => {
-    const trimmed = newBuyPrice.trim();
-    if (!trimmed) {
-      setBuyPriceError(BUY_PRICE_REQUIRED_MESSAGE);
-      return null;
-    }
-
-    const parsedBuyPrice = parsePositiveNumber(trimmed);
-    if (parsedBuyPrice === null) {
-      setBuyPriceError(BUY_PRICE_POSITIVE_MESSAGE);
-      return null;
-    }
-
-    setBuyPriceError('');
-    return parsedBuyPrice;
+  const openEditDialog = (position: Position) => {
+    dialogs.openEditDialog(position);
+    form.prepareEditForm(position, tab);
   };
 
-  const validateBuyDate = (): string | null => {
-    if (newBuyDate === null) {
-      setBuyDateError(BUY_DATE_REQUIRED_MESSAGE);
-      return null;
-    }
-
-    if (!newBuyDate.isValid()) {
-      setBuyDateError(BUY_DATE_INVALID_MESSAGE);
-      return null;
-    }
-
-    setBuyDateError('');
-    return newBuyDate.toISOString();
+  const openDeleteDialog = (position: Position) => {
+    dialogs.openDeleteDialog(position);
   };
 
-  const validateSellPrice = (): number | null => {
-    const trimmed = newSellPrice.trim();
-    if (!trimmed) {
-      setSellPriceError(SELL_PRICE_REQUIRED_MESSAGE);
-      return null;
-    }
-
-    const parsedSellPrice = parseRequiredNumberAllowZero(trimmed);
-    if (parsedSellPrice === null) {
-      setSellPriceError(SELL_PRICE_REQUIRED_MESSAGE);
-      return null;
-    }
-
-    setSellPriceError('');
-    return parsedSellPrice;
+  const closeAddDialog = () => {
+    dialogs.closeAddDialog();
+    form.clearAddErrors();
+    form.setSelectedInstrument(null);
   };
 
-  const validateSellDate = (): string | null => {
-    if (newSellDate === null) {
-      setSellDateError(SELL_DATE_REQUIRED_MESSAGE);
-      return null;
-    }
+  const closeCloseDialog = () => {
+    dialogs.closeCloseDialog();
+    form.clearCloseErrors();
+  };
 
-    if (!newSellDate.isValid()) {
-      setSellDateError(SELL_DATE_INVALID_MESSAGE);
-      return null;
-    }
+  const closeEditDialog = () => {
+    dialogs.closeEditDialog();
+    form.clearEditErrors();
+  };
 
-    setSellDateError('');
-    return newSellDate.toISOString();
+  const closeDeleteDialog = () => {
+    dialogs.closeDeleteDialog();
   };
 
   const onAddSubmit = () => {
-    const ticker = validateTicker();
-    if (ticker === null) {
-      return;
-    }
+    const tickerResult = validateTicker(form.selectedInstrument);
+    form.setTickerError(tickerResult.error);
+    if (tickerResult.value === null) return;
 
-    const quantity = validateQuantity();
-    if (quantity === null) {
-      return;
-    }
+    const quantityResult = validateQuantity(form.newQuantity);
+    form.setQuantityError(quantityResult.error);
+    if (quantityResult.value === null) return;
 
-    const buyPrice = validateBuyPrice();
-    if (buyPrice === null) {
-      return;
-    }
+    const buyPriceResult = validateBuyPrice(form.newBuyPrice);
+    form.setBuyPriceError(buyPriceResult.error);
+    if (buyPriceResult.value === null) return;
 
-    const buyDate = validateBuyDate();
-    if (buyDate === null) {
-      return;
-    }
+    const buyDateResult = validateBuyDate(form.newBuyDate);
+    form.setBuyDateError(buyDateResult.error);
+    if (buyDateResult.value === null) return;
 
-    addPosition.mutate({
-      ticker,
-      quantity,
-      buyPrice,
-      buyDate,
+    mutations.addPosition.mutate({
+      ticker: tickerResult.value,
+      quantity: quantityResult.value,
+      buyPrice: buyPriceResult.value,
+      buyDate: buyDateResult.value,
     });
   };
 
   const onCloseSubmit = () => {
-    if (!selected) {
-      return;
-    }
+    if (!dialogs.selected) return;
 
-    const sellPrice = validateSellPrice();
-    if (sellPrice === null) {
-      return;
-    }
+    const sellPriceResult = validateSellPrice(form.newSellPrice);
+    form.setSellPriceError(sellPriceResult.error);
+    if (sellPriceResult.value === null) return;
 
-    const sellDate = validateSellDate();
-    if (sellDate === null) {
-      return;
-    }
+    const sellDateResult = validateSellDate(form.newSellDate);
+    form.setSellDateError(sellDateResult.error);
+    if (sellDateResult.value === null) return;
 
-    closePosition.mutate({
-      id: selected.id,
-      sellPrice,
-      sellDate,
+    mutations.closePosition.mutate({
+      id: dialogs.selected.id,
+      sellPrice: sellPriceResult.value,
+      sellDate: sellDateResult.value,
     });
   };
 
   const onEditSubmit = () => {
-    if (!selected) {
-      return;
-    }
+    if (!dialogs.selected) return;
 
-    const quantity = validateQuantity();
-    if (quantity === null) {
-      return;
-    }
+    const quantityResult = validateQuantity(form.newQuantity);
+    form.setQuantityError(quantityResult.error);
+    if (quantityResult.value === null) return;
 
-    const buyPrice = validateBuyPrice();
-    if (buyPrice === null) {
-      return;
-    }
+    const buyPriceResult = validateBuyPrice(form.newBuyPrice);
+    form.setBuyPriceError(buyPriceResult.error);
+    if (buyPriceResult.value === null) return;
 
-    const buyDate = validateBuyDate();
-    if (buyDate === null) {
-      return;
-    }
+    const buyDateResult = validateBuyDate(form.newBuyDate);
+    form.setBuyDateError(buyDateResult.error);
+    if (buyDateResult.value === null) return;
 
     let closedFields: { sellPrice?: number; sellDate?: string } = {};
     if (tab === 'closed') {
-      const sellPrice = validateSellPrice();
-      if (sellPrice === null) {
-        return;
-      }
+      const sellPriceResult = validateSellPrice(form.newSellPrice);
+      form.setSellPriceError(sellPriceResult.error);
+      if (sellPriceResult.value === null) return;
 
-      const sellDate = validateSellDate();
-      if (sellDate === null) {
-        return;
-      }
+      const sellDateResult = validateSellDate(form.newSellDate);
+      form.setSellDateError(sellDateResult.error);
+      if (sellDateResult.value === null) return;
 
-      closedFields = { sellPrice, sellDate };
+      closedFields = {
+        sellPrice: sellPriceResult.value,
+        sellDate: sellDateResult.value,
+      };
     }
 
-    editPosition.mutate({
-      id: selected.id,
-      quantity,
-      buyPrice,
-      buyDate,
+    mutations.editPosition.mutate({
+      id: dialogs.selected.id,
+      quantity: quantityResult.value,
+      buyPrice: buyPriceResult.value,
+      buyDate: buyDateResult.value,
       ...closedFields,
     });
   };
 
   const onDeleteConfirm = () => {
-    if (!selected) {
-      return;
-    }
-
-    deletePosition.mutate(selected.id);
-  };
-
-  const openAddDialog = () => {
-    setNewTicker('');
-    setSelectedInstrument(null);
-    setNewQuantity('');
-    setNewBuyPrice('');
-    setNewBuyDate(dayjs());
-    setTickerError('');
-    setQuantityError('');
-    setBuyPriceError('');
-    setBuyDateError('');
-    setAddOpen(true);
-  };
-
-  const openDeleteDialog = (position: Position) => {
-    setSelected(position);
-    setDeleteOpen(true);
-  };
-
-  const openCloseDialog = (position: Position) => {
-    setSelected(position);
-    setNewSellPrice('');
-    setNewSellDate(dayjs());
-    setSellPriceError('');
-    setSellDateError('');
-    setCloseOpen(true);
-  };
-
-  const openEditDialog = (position: Position) => {
-    setSelected(position);
-    setNewQuantity(String(position.quantity));
-    setNewBuyPrice(String(position.buyPrice));
-    setNewBuyDate(dayjs(position.buyDate));
-    setQuantityError('');
-    setBuyPriceError('');
-    setBuyDateError('');
-    setSellPriceError('');
-    setSellDateError('');
-
-    if (tab === 'closed') {
-      setNewSellDate(position.sellDate ? dayjs(position.sellDate) : dayjs());
-      setNewSellPrice(isFiniteNumber(position.sellPrice) ? String(position.sellPrice) : '');
-    }
-
-    setEditOpen(true);
-  };
-
-  const handleSetNewTicker = (value: string) => {
-    setNewTicker(value);
-
-    if (selectedInstrument && value !== formatInstrumentInputValue(selectedInstrument)) {
-      setSelectedInstrument(null);
-    }
-
-    if (tickerError) {
-      setTickerError('');
-    }
-  };
-
-  const handleSetSelectedInstrument = (instrument: InstrumentSearchResult | null) => {
-    setSelectedInstrument(instrument);
-
-    if (instrument) {
-      setNewTicker(formatInstrumentInputValue(instrument));
-      setTickerError('');
-      return;
-    }
-
-    if (!newTicker.trim()) {
-      setTickerError('');
-    }
-  };
-
-  const handleSetNewQuantity = (value: string) => {
-    setNewQuantity(value);
-
-    if (!value.trim()) {
-      setQuantityError('');
-      return;
-    }
-
-    const parsed = parsePositiveNumber(value);
-    setQuantityError(parsed === null ? QUANTITY_ERROR_MESSAGE : '');
-  };
-
-  const handleSetNewBuyPrice = (value: string) => {
-    setNewBuyPrice(value);
-
-    if (!value.trim()) {
-      setBuyPriceError('');
-      return;
-    }
-
-    const parsed = parsePositiveNumber(value);
-    setBuyPriceError(parsed === null ? BUY_PRICE_POSITIVE_MESSAGE : '');
-  };
-
-  const handleSetNewBuyDate = (value: Dayjs | null) => {
-    setNewBuyDate(value);
-
-    if (value === null) {
-      setBuyDateError('');
-      return;
-    }
-
-    setBuyDateError(value.isValid() ? '' : BUY_DATE_INVALID_MESSAGE);
-  };
-
-  const handleSetNewSellPrice = (value: string) => {
-    setNewSellPrice(value);
-
-    if (!value.trim()) {
-      setSellPriceError('');
-      return;
-    }
-
-    const parsed = parseRequiredNumberAllowZero(value);
-    setSellPriceError(parsed === null ? SELL_PRICE_REQUIRED_MESSAGE : '');
-  };
-
-  const handleSetNewSellDate = (value: Dayjs | null) => {
-    setNewSellDate(value);
-
-    if (value === null) {
-      setSellDateError('');
-      return;
-    }
-
-    setSellDateError(value.isValid() ? '' : SELL_DATE_INVALID_MESSAGE);
+    if (!dialogs.selected) return;
+    mutations.deletePosition.mutate(dialogs.selected.id);
   };
 
   return {
@@ -715,84 +241,70 @@ export function usePositionsPage(isMobile: boolean): PositionsPageVM {
     loading,
     errorText,
 
-    pricing,
-    totalsProfitTone,
-    totalsPctTone,
-    headerSubtitle,
-    listSubtitle,
+    pricing: pricingState.pricing,
+    totalsProfitTone: pricingState.totalsProfitTone,
+    totalsPctTone: pricingState.totalsPctTone,
+    headerSubtitle: pricingState.headerSubtitle,
+    listSubtitle: pricingState.listSubtitle,
     showQuoteAlert,
     isMobile,
 
-    addOpen,
-    closeOpen,
-    editOpen,
-    deleteOpen,
-    selected,
+    addOpen: dialogs.addOpen,
+    closeOpen: dialogs.closeOpen,
+    editOpen: dialogs.editOpen,
+    deleteOpen: dialogs.deleteOpen,
+    selected: dialogs.selected,
 
-    newTicker,
-    selectedInstrument,
-    newQuantity,
-    newBuyPrice,
-    newBuyDate,
-    newSellPrice,
-    newSellDate,
-    tickerError,
-    quantityError,
-    buyPriceError,
-    buyDateError,
-    sellPriceError,
-    sellDateError,
+    newTicker: form.newTicker,
+    selectedInstrument: form.selectedInstrument,
+    newQuantity: form.newQuantity,
+    newBuyPrice: form.newBuyPrice,
+    newBuyDate: form.newBuyDate,
+    newSellPrice: form.newSellPrice,
+    newSellDate: form.newSellDate,
+    tickerError: form.tickerError,
+    quantityError: form.quantityError,
+    buyPriceError: form.buyPriceError,
+    buyDateError: form.buyDateError,
+    sellPriceError: form.sellPriceError,
+    sellDateError: form.sellDateError,
 
-    setNewTicker: handleSetNewTicker,
-    setSelectedInstrument: handleSetSelectedInstrument,
-    setNewQuantity: handleSetNewQuantity,
-    setNewBuyPrice: handleSetNewBuyPrice,
-    setNewBuyDate: handleSetNewBuyDate,
-    setNewSellPrice: handleSetNewSellPrice,
-    setNewSellDate: handleSetNewSellDate,
+    setNewTicker: form.setNewTicker,
+    setSelectedInstrument: form.setSelectedInstrument,
+    setNewQuantity: form.setNewQuantity,
+    setNewBuyPrice: form.setNewBuyPrice,
+    setNewBuyDate: form.setNewBuyDate,
+    setNewSellPrice: form.setNewSellPrice,
+    setNewSellDate: form.setNewSellDate,
 
     openAddDialog,
     openCloseDialog,
     openEditDialog,
     openDeleteDialog,
-
-    closeAddDialog: () => {
-      setAddOpen(false);
-      setSelectedInstrument(null);
-      setTickerError('');
-      setQuantityError('');
-      setBuyPriceError('');
-      setBuyDateError('');
-    },
-
-    closeCloseDialog: () => {
-      setCloseOpen(false);
-      setSellPriceError('');
-      setSellDateError('');
-    },
-
-    closeEditDialog: () => {
-      setEditOpen(false);
-      setQuantityError('');
-      setBuyPriceError('');
-      setBuyDateError('');
-      setSellPriceError('');
-      setSellDateError('');
-    },
-
-    closeDeleteDialog: () => setDeleteOpen(false),
+    closeAddDialog,
+    closeCloseDialog,
+    closeEditDialog,
+    closeDeleteDialog,
 
     onAddSubmit,
     onCloseSubmit,
     onEditSubmit,
     onDeleteConfirm,
 
-    isAdding: addPosition.isPending,
-    isClosing: closePosition.isPending,
-    isEditing: editPosition.isPending,
-    isDeleting: deletePosition.isPending,
+    isAdding: mutations.addPosition.isPending,
+    isClosing: mutations.closePosition.isPending,
+    isEditing: mutations.editPosition.isPending,
+    isDeleting: mutations.deletePosition.isPending,
 
     toast,
     closeToast,
   };
 }
+
+export type {
+  PositionsPageVM,
+  PricingTotals,
+  ToastSeverity,
+  ToastState,
+  Tab,
+} from './usePositionsPage.types';

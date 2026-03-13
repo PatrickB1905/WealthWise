@@ -31,7 +31,7 @@ export function HomeHowItWorksSection({ steps }: Props) {
 
         <Grid container spacing={3} justifyContent="center" sx={{ mt: 2 }} alignItems="stretch">
           {steps.map((s, idx) => (
-            <Grid item xs={12} md={4} key={s.title} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, md: 4 }} key={s.title} sx={{ display: 'flex' }}>
               <FeatureCardLayout sx={{ width: '100%', height: '100%' }}>
                 <Typography variant="overline" color="text.secondary">
                   Step {idx + 1}

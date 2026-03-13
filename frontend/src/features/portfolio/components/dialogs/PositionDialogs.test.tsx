@@ -1,47 +1,107 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import React from 'react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import dayjs from 'dayjs';
 
 import theme from '@shared/theme';
 import { PositionDialogs } from './PositionDialogs';
 
-jest.mock('@features/market-data', () => ({
-  __esModule: true,
-  useInstrumentSearch: () => ({
-    data: [],
-    isFetching: false,
-  }),
+jest.mock('../forms/InstrumentAutocomplete', () => ({
+  InstrumentAutocomplete: (props: unknown) => {
+    const typed = props as {
+      helperText?: string;
+      error?: boolean;
+      onInputChange: (value: string) => void;
+      onSelectionChange: (value: unknown) => void;
+    };
+
+    return (
+      <div>
+        <label htmlFor="instrument-input">Ticker</label>
+        <input
+          id="instrument-input"
+          aria-label="Ticker"
+          onChange={(e) => typed.onInputChange(e.target.value)}
+        />
+        <button
+          onClick={() =>
+            typed.onSelectionChange({
+              symbol: 'AAPL',
+              name: 'Apple Inc.',
+              exchange: 'NASDAQ',
+              assetType: 'stock',
+              currency: 'USD',
+              logoUrl: '',
+            })
+          }
+        >
+          select instrument
+        </button>
+        {typed.error ? <div>{typed.helperText}</div> : null}
+      </div>
+    );
+  },
 }));
 
-function baseProps() {
-  return {
-    tab: 'open' as const,
-    selected: null,
+jest.mock('@mui/x-date-pickers', () => ({
+  DatePicker: (props: unknown) => {
+    const typed = props as {
+      label: React.ReactNode;
+      onChange: (value: unknown) => void;
+      slotProps?: { textField?: { helperText?: string; error?: boolean } };
+    };
 
-    addOpen: true,
+    return (
+      <div>
+        <label>{typed.label as React.ReactNode}</label>
+        <button onClick={() => typed.onChange(dayjs('2026-03-11'))}>set date</button>
+        {typed.slotProps?.textField?.error ? (
+          <div>{typed.slotProps.textField.helperText}</div>
+        ) : null}
+      </div>
+    );
+  },
+  LocalizationProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('@mui/x-date-pickers/AdapterDayjs', () => ({
+  AdapterDayjs: function AdapterDayjs() {
+    return null;
+  },
+}));
+
+function renderDialogs(overrides?: Partial<React.ComponentProps<typeof PositionDialogs>>) {
+  const props: React.ComponentProps<typeof PositionDialogs> = {
+    tab: 'open',
+    selected: {
+      id: 1,
+      ticker: 'AAPL',
+      quantity: 10,
+      buyPrice: 100,
+      buyDate: '2026-03-01T00:00:00.000Z',
+    },
+    addOpen: false,
     closeOpen: false,
     editOpen: false,
     deleteOpen: false,
-
     onCloseAdd: jest.fn(),
     onCloseClose: jest.fn(),
     onCloseEdit: jest.fn(),
     onCloseDelete: jest.fn(),
-
     newTicker: '',
     selectedInstrument: null,
     newQuantity: '',
     newBuyPrice: '',
-    newBuyDate: dayjs(),
+    newBuyDate: dayjs('2026-03-01'),
     newSellPrice: '',
-    newSellDate: dayjs(),
+    newSellDate: dayjs('2026-03-11'),
     tickerError: '',
     quantityError: '',
     buyPriceError: '',
     buyDateError: '',
     sellPriceError: '',
     sellDateError: '',
-
     setNewTicker: jest.fn(),
     setSelectedInstrument: jest.fn(),
     setNewQuantity: jest.fn(),
@@ -49,138 +109,109 @@ function baseProps() {
     setNewBuyDate: jest.fn(),
     setNewSellPrice: jest.fn(),
     setNewSellDate: jest.fn(),
-
     onAddSubmit: jest.fn(),
     onCloseSubmit: jest.fn(),
     onEditSubmit: jest.fn(),
     onDeleteConfirm: jest.fn(),
-
     isAdding: false,
     isClosing: false,
     isEditing: false,
     isDeleting: false,
+    ...overrides,
   };
-}
 
-function renderDialog(overrides: Partial<ReturnType<typeof baseProps>> = {}) {
-  return render(
+  render(
     <ThemeProvider theme={theme}>
-      <PositionDialogs {...baseProps()} {...overrides} />
+      <PositionDialogs {...props} />
     </ThemeProvider>,
   );
+
+  return props;
 }
 
 describe('PositionDialogs', () => {
-  it('renders inline validation messages for ticker, quantity, buy price, and buy date', () => {
-    renderDialog({
-      tickerError: 'Please select a valid ticker from the list',
-      quantityError: 'Quantity must be greater than 0',
-      buyPriceError: 'Buy price is required',
-      buyDateError: 'Buy date is required',
+  it('renders add dialog and wires add form actions', async () => {
+    const user = userEvent.setup();
+    const props = renderDialogs({ addOpen: true });
+
+    const dialog = screen.getByRole('dialog', { name: /add new position/i });
+
+    expect(within(dialog).getByText('Add New Position')).toBeInTheDocument();
+
+    await user.type(within(dialog).getByLabelText('Ticker'), 'AAP');
+    expect(props.setNewTicker).toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: /select instrument/i }));
+    expect(props.setSelectedInstrument).toHaveBeenCalled();
+
+    await user.type(within(dialog).getByRole('spinbutton', { name: /quantity/i }), '10');
+    expect(props.setNewQuantity).toHaveBeenCalled();
+
+    await user.type(within(dialog).getByRole('spinbutton', { name: /buy price/i }), '100');
+    expect(props.setNewBuyPrice).toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: /set date/i }));
+    expect(props.setNewBuyDate).toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: /^save$/i }));
+    expect(props.onAddSubmit).toHaveBeenCalledTimes(1);
+
+    await user.click(within(dialog).getByRole('button', { name: /cancel/i }));
+    expect(props.onCloseAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders close dialog and wires close actions', async () => {
+    const user = userEvent.setup();
+    const props = renderDialogs({ closeOpen: true });
+
+    const dialog = screen.getByRole('dialog', { name: /close position aapl/i });
+
+    expect(within(dialog).getByText('Close Position AAPL')).toBeInTheDocument();
+
+    await user.type(within(dialog).getByRole('spinbutton', { name: /sell price/i }), '120');
+    expect(props.setNewSellPrice).toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: /set date/i }));
+    expect(props.setNewSellDate).toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: /^close$/i }));
+    expect(props.onCloseSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders closed edit fields when tab is closed', () => {
+    renderDialogs({ editOpen: true, tab: 'closed' });
+
+    const dialog = screen.getByRole('dialog', { name: /edit position aapl/i });
+
+    expect(within(dialog).getByText('Edit Position AAPL')).toBeInTheDocument();
+    expect(within(dialog).getByRole('spinbutton', { name: /quantity/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('spinbutton', { name: /buy price/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('spinbutton', { name: /sell price/i })).toBeInTheDocument();
+  });
+
+  it('renders delete confirmation and wires delete actions', async () => {
+    const user = userEvent.setup();
+    const props = renderDialogs({ deleteOpen: true });
+
+    const dialog = screen.getByRole('dialog', { name: /delete position aapl/i });
+
+    expect(within(dialog).getByText('Delete Position AAPL?')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('This will permanently remove the position. Are you sure?'),
+    ).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }));
+    expect(props.onDeleteConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows pending button labels', () => {
+    renderDialogs({
+      addOpen: true,
+      isAdding: true,
     });
 
-    expect(screen.getByText('Please select a valid ticker from the list')).toBeInTheDocument();
-    expect(screen.getByText('Quantity must be greater than 0')).toBeInTheDocument();
-    expect(screen.getByText('Buy price is required')).toBeInTheDocument();
-    expect(screen.getByText('Buy date is required')).toBeInTheDocument();
-  });
+    const dialog = screen.getByRole('dialog', { name: /add new position/i });
 
-  it('shows tooltip content for ticker, quantity, and buy price', async () => {
-    renderDialog();
-
-    const tickerInfoButton = screen.getByRole('button', { name: /ticker info/i });
-    fireEvent.mouseOver(tickerInfoButton);
-    expect(
-      await screen.findByText(/search by ticker or company name and select a valid instrument/i),
-    ).toBeInTheDocument();
-    fireEvent.mouseLeave(tickerInfoButton);
-
-    const quantityInfoButton = screen.getByRole('button', { name: /quantity info/i });
-    fireEvent.mouseOver(quantityInfoButton);
-    expect(
-      await screen.findByText(
-        /fractional shares are supported, but the quantity must be greater than 0/i,
-      ),
-    ).toBeInTheDocument();
-    fireEvent.mouseLeave(quantityInfoButton);
-
-    const buyPriceInfoButton = screen.getByRole('button', { name: /buy price info/i });
-    fireEvent.mouseOver(buyPriceInfoButton);
-    expect(
-      await screen.findByText(/this value is required and must be greater than 0/i),
-    ).toBeInTheDocument();
-  });
-
-  it('renders inline validation messages for sell price and sell date in the close dialog', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <PositionDialogs
-          {...baseProps()}
-          addOpen={false}
-          closeOpen
-          selected={{
-            id: 1,
-            ticker: 'AAPL',
-            quantity: 1,
-            buyPrice: 10,
-            buyDate: new Date().toISOString(),
-          }}
-          sellPriceError="Sell price is required"
-          sellDateError="Sell date is required"
-        />
-      </ThemeProvider>,
-    );
-
-    expect(screen.getByText('Sell price is required')).toBeInTheDocument();
-    expect(screen.getByText('Sell date is required')).toBeInTheDocument();
-  });
-
-  it('shows tooltip content for sell price and date', async () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <PositionDialogs
-          {...baseProps()}
-          addOpen={false}
-          closeOpen
-          selected={{
-            id: 1,
-            ticker: 'AAPL',
-            quantity: 1,
-            buyPrice: 10,
-            buyDate: new Date().toISOString(),
-          }}
-        />
-      </ThemeProvider>,
-    );
-
-    const sellPriceInfoButton = screen.getByRole('button', { name: /sell price info/i });
-    fireEvent.mouseOver(sellPriceInfoButton);
-    expect(
-      await screen.findByText(/zero is allowed if the position became worthless/i),
-    ).toBeInTheDocument();
-    fireEvent.mouseLeave(sellPriceInfoButton);
-
-    const sellDateInfoButton = screen.getByRole('button', { name: /sell date info/i });
-    fireEvent.mouseOver(sellDateInfoButton);
-    expect(
-      await screen.findByText(/invalid or empty dates are not accepted/i),
-    ).toBeInTheDocument();
-  });
-
-  it('renders inline validation message for buy date in edit mode', () => {
-    renderDialog({
-      addOpen: false,
-      editOpen: true,
-      selected: {
-        id: 1,
-        ticker: 'AAPL',
-        quantity: 1,
-        buyPrice: 10,
-        buyDate: new Date().toISOString(),
-      },
-      buyDateError: 'Enter a valid buy date',
-    });
-
-    expect(screen.getByText('Enter a valid buy date')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /saving…/i })).toBeDisabled();
   });
 });

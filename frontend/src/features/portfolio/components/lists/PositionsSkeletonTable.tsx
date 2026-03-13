@@ -1,4 +1,3 @@
-import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -8,7 +7,7 @@ import { PositionsTableContainer, SkeletonBlock, StickyTableHead } from '@shared
 
 export function PositionsSkeletonTable() {
   return (
-    <PositionsTableContainer component={Paper}>
+    <PositionsTableContainer>
       <Table size="small">
         <StickyTableHead>
           <TableRow>

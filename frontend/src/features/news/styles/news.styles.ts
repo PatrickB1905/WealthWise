@@ -1,6 +1,5 @@
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItemButton, { type ListItemButtonProps } from '@mui/material/ListItemButton';
 import Box from '@mui/material/Box';
@@ -106,7 +105,9 @@ export const NewsUpdatedRow = styled(Box)(({ theme }) => ({
   },
 }));
 
-export const NewsUpdatedPill = styled(Box)<{ dimmed?: boolean }>(({ theme, dimmed }) => ({
+export const NewsUpdatedPill = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'dimmed',
+})<{ dimmed?: boolean }>(({ theme, dimmed }) => ({
   ...buildStatusPillStyles(theme),
   minWidth: 150,
   width: '100%',
@@ -161,7 +162,9 @@ export const NewsArticlesList = styled(List)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
 }));
 
-export const NewsArticleItem = styled(NewsListItem)<{ dimmed?: boolean }>(({ theme, dimmed }) => ({
+export const NewsArticleItem = styled(NewsListItem, {
+  shouldForwardProp: (prop) => prop !== 'dimmed',
+})<{ dimmed?: boolean }>(({ theme, dimmed }) => ({
   paddingTop: theme.spacing(1.5),
   paddingBottom: theme.spacing(1.5),
   paddingLeft: theme.spacing(1.5),
@@ -236,7 +239,7 @@ export const NewsMetaSpacer = styled(Box)(() => ({
   flex: 1,
 }));
 
-export const NewsOpenLinkDesktop = styled(Link)(({ theme }) => ({
+export const NewsOpenLinkDesktop = styled(Typography)(({ theme }) => ({
   display: 'none',
   alignItems: 'center',
   gap: theme.spacing(0.5),

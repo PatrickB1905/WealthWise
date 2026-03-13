@@ -6,14 +6,23 @@ import { queryClient } from '@shared/lib/query-client';
 
 type Props = { children: React.ReactNode };
 
-type ImportMetaWithEnv = ImportMeta & { env?: { DEV?: boolean } };
+type ViteLikeEnv = {
+  DEV?: boolean;
+  MODE?: string;
+};
 
 function isDevEnv(): boolean {
-  try {
-    return Boolean((import.meta as ImportMetaWithEnv).env?.DEV);
-  } catch {
-    return process.env.NODE_ENV !== 'production';
+  const viteEnv = (globalThis as { __VITE_ENV__?: ViteLikeEnv }).__VITE_ENV__;
+
+  if (typeof viteEnv?.DEV === 'boolean') {
+    return viteEnv.DEV;
   }
+
+  if (typeof viteEnv?.MODE === 'string') {
+    return viteEnv.MODE !== 'production';
+  }
+
+  return process.env.NODE_ENV !== 'production';
 }
 
 export function QueryProvider({ children }: Props) {

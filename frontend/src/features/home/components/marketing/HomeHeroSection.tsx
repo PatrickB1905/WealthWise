@@ -37,7 +37,7 @@ export function HomeHeroSection({
 
       <HeroContent maxWidth="lg">
         <Grid container spacing={{ xs: 5, md: 7 }} alignItems="center">
-          <Grid item xs={12} md={7}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={2.2} sx={{ maxWidth: 780 }}>
               <SubtleKicker variant="body2">
                 <KickerDot />

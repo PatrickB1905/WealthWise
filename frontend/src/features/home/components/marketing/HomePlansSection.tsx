@@ -29,7 +29,7 @@ export function HomePlansSection({ onRegister }: Props) {
         </Stack>
 
         <Grid container spacing={3} sx={{ mt: 2.5 }} justifyContent="center" alignItems="stretch">
-          <Grid item xs={12} md={5} sx={{ display: 'flex' }}>
+          <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
             <FeatureCardLayout
               sx={{
                 flex: 1,
@@ -70,7 +70,7 @@ export function HomePlansSection({ onRegister }: Props) {
             </FeatureCardLayout>
           </Grid>
 
-          <Grid item xs={12} md={5} sx={{ display: 'flex' }}>
+          <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
             <FeatureCardLayout
               sx={{
                 flex: 1,

@@ -22,7 +22,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function useInstrumentSearch(query: string, options?: Options) {
-  const trimmed = query.trim();
+  const trimmed = query.trim().toLowerCase();
   const debouncedQuery = useDebouncedValue(trimmed, 300);
 
   return useQuery<InstrumentSearchResult[], Error>({
@@ -32,6 +32,6 @@ export function useInstrumentSearch(query: string, options?: Options) {
     staleTime: 60_000,
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
-    placeholderData: (prev) => prev ?? [],
+    placeholderData: (previousData) => previousData,
   });
 }

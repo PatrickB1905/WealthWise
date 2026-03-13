@@ -1,4 +1,12 @@
-import { STORAGE_KEYS } from '@shared/lib/env';
+import { ENV, STORAGE_KEYS } from '@shared/lib/env';
+
+import {
+  __resetSocketModuleForTests,
+  __setIoForTests,
+  getSocket,
+  resetSocket,
+  type SocketIoOptions,
+} from './socket';
 
 type FakeSocket = {
   on: jest.Mock;
@@ -6,7 +14,7 @@ type FakeSocket = {
   disconnect: jest.Mock;
 };
 
-function makeFakeSocket(): FakeSocket {
+function createFakeSocket(): FakeSocket {
   return {
     on: jest.fn(),
     emit: jest.fn(),
@@ -14,151 +22,167 @@ function makeFakeSocket(): FakeSocket {
   };
 }
 
-type IoOptions = {
-  auth?: { token?: string; userId?: number };
-  transports?: string[];
-};
+describe('shared/lib/socket', () => {
+  const originalLocation = window.location;
 
-type IoCall = [string, IoOptions?];
-
-type EnvMock = {
-  POSITIONS_API_URL: string;
-  MARKET_DATA_API_URL: string;
-  ANALYTICS_API_URL: string;
-  NEWS_API_URL: string;
-  POSITIONS_WS_URL?: string;
-};
-
-function setWindowOrigin(origin: string) {
-  Object.defineProperty(window, 'location', {
-    value: { origin },
-    writable: true,
-  });
-}
-
-async function loadSocketModule(env: Partial<EnvMock> = {}) {
-  jest.resetModules();
-
-  const baseEnv: EnvMock = {
-    POSITIONS_API_URL: 'http://localhost:8080',
-    MARKET_DATA_API_URL: 'http://localhost:8081',
-    ANALYTICS_API_URL: 'http://localhost:8082',
-    NEWS_API_URL: 'http://localhost:8083',
-    POSITIONS_WS_URL: 'http://localhost:8080',
-  };
-
-  const mergedEnv: EnvMock = { ...baseEnv, ...env };
-
-  jest.doMock('./env', () => ({
-    __esModule: true,
-    ENV: mergedEnv,
-    STORAGE_KEYS: {
-      TOKEN: 'ww_token',
-      USER: 'ww_user',
-    },
-  }));
-
-  const mod = await import('./socket');
-  mod.__resetSocketModuleForTests();
-  return mod;
-}
-
-describe('socket', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     localStorage.clear();
-    setWindowOrigin('http://localhost:5173');
+    __resetSocketModuleForTests();
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        origin: 'http://localhost:5173',
+      },
+    });
   });
 
-  it('creates a socket once and reuses it', async () => {
-    const socketMod = await loadSocketModule();
-
-    const fake = makeFakeSocket();
-    const io = jest.fn(() => fake as unknown);
-
-    socketMod.__setIoForTests(io as unknown as (...args: unknown[]) => unknown);
-
-    const s1 = socketMod.getSocket();
-    const s2 = socketMod.getSocket();
-
-    expect(s1).toBe(s2);
-    expect(io).toHaveBeenCalledTimes(1);
+  afterEach(() => {
+    __resetSocketModuleForTests();
   });
 
-  it('passes auth token and userId to socket.io', async () => {
-    const socketMod = await loadSocketModule();
+  afterAll(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
 
-    const fake = makeFakeSocket();
-    const io = jest.fn(() => fake as unknown);
-
-    socketMod.__setIoForTests(io as unknown as (...args: unknown[]) => unknown);
+  it('creates a socket with websocket transport and auth payload from local storage', () => {
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
 
     localStorage.setItem(STORAGE_KEYS.TOKEN, 'token-123');
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({ id: 99 }));
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({ id: 42 }));
 
-    socketMod.getSocket();
+    __setIoForTests(ioSpy);
 
-    expect(io).toHaveBeenCalledTimes(1);
+    const socket = getSocket();
 
-    const calls = io.mock.calls as unknown as IoCall[];
-    const url = calls[0]?.[0];
-    const opts = calls[0]?.[1];
-
-    expect(url).toBe('http://localhost:8080');
-    expect(opts?.auth).toEqual({ token: 'token-123', userId: 99 });
-    expect(opts?.transports).toEqual(['websocket']);
+    expect(socket).toBe(fakeSocket);
+    expect(ioSpy).toHaveBeenCalledWith(
+      ENV.POSITIONS_WS_URL ?? 'ws://localhost:3000',
+      {
+        transports: ['websocket'],
+        auth: { token: 'token-123', userId: 42 },
+      } satisfies SocketIoOptions,
+    );
   });
 
-  it('resetSocket disconnects and allows a new instance', async () => {
-    const socketMod = await loadSocketModule();
+  it('falls back to window.location.origin when no websocket env url exists', async () => {
+    jest.resetModules();
 
-    const fake1 = makeFakeSocket();
-    const fake2 = makeFakeSocket();
+    jest.doMock('@shared/lib/env', () => ({
+      ENV: {
+        POSITIONS_WS_URL: undefined,
+      },
+      STORAGE_KEYS: {
+        TOKEN: 'ww_token',
+        USER: 'ww_user',
+      },
+    }));
 
-    const io = jest
-      .fn()
-      .mockImplementationOnce(() => fake1 as unknown)
-      .mockImplementationOnce(() => fake2 as unknown);
+    const mod = await import('./socket');
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
 
-    socketMod.__setIoForTests(io as unknown as (...args: unknown[]) => unknown);
+    mod.__setIoForTests(ioSpy);
 
-    const s1 = socketMod.getSocket();
-    socketMod.resetSocket();
-    const s2 = socketMod.getSocket();
+    mod.getSocket();
 
-    expect(fake1.disconnect).toHaveBeenCalledTimes(1);
-    expect(s1).not.toBe(s2);
-    expect(io).toHaveBeenCalledTimes(2);
+    expect(ioSpy).toHaveBeenCalledWith('http://localhost:5173', {
+      transports: ['websocket'],
+      auth: { token: null, userId: undefined },
+    });
+
+    mod.__resetSocketModuleForTests();
   });
 
-  it('defaults to window.location.origin when POSITIONS_WS_URL is not set', async () => {
-    const socketMod = await loadSocketModule({ POSITIONS_WS_URL: undefined });
+  it('reuses the same socket instance across calls until reset', () => {
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
 
-    const fake = makeFakeSocket();
-    const io = jest.fn(() => fake as unknown);
+    __setIoForTests(ioSpy);
 
-    socketMod.__setIoForTests(io as unknown as (...args: unknown[]) => unknown);
+    const first = getSocket();
+    const second = getSocket();
 
-    socketMod.getSocket();
-
-    const calls = io.mock.calls as unknown as IoCall[];
-    const url = calls[0]?.[0];
-
-    expect(url).toBe('http://localhost:5173');
+    expect(first).toBe(second);
+    expect(ioSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('uses POSITIONS_WS_URL when provided', async () => {
-    const socketMod = await loadSocketModule({ POSITIONS_WS_URL: 'http://localhost:9999' });
+  it('registers a connect handler that joins the current user room when user id exists', () => {
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
 
-    const fake = makeFakeSocket();
-    const io = jest.fn(() => fake as unknown);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({ id: 42 }));
+    __setIoForTests(ioSpy);
 
-    socketMod.__setIoForTests(io as unknown as (...args: unknown[]) => unknown);
+    getSocket();
 
-    socketMod.getSocket();
+    expect(fakeSocket.on).toHaveBeenCalledWith('connect', expect.any(Function));
 
-    const calls = io.mock.calls as unknown as IoCall[];
-    const url = calls[0]?.[0];
+    const connectHandler = fakeSocket.on.mock.calls.find(([event]) => event === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
 
-    expect(url).toBe('http://localhost:9999');
+    expect(connectHandler).toBeDefined();
+
+    connectHandler?.();
+
+    expect(fakeSocket.emit).toHaveBeenCalledWith('join', 42);
+  });
+
+  it('does not emit join on connect when user id is missing', () => {
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
+
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify({ email: 'john@example.com' }));
+    __setIoForTests(ioSpy);
+
+    getSocket();
+
+    const connectHandler = fakeSocket.on.mock.calls.find(([event]) => event === 'connect')?.[1] as
+      | (() => void)
+      | undefined;
+
+    connectHandler?.();
+
+    expect(fakeSocket.emit).not.toHaveBeenCalled();
+  });
+
+  it('handles invalid stored user json safely', () => {
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
+
+    localStorage.setItem(STORAGE_KEYS.USER, '{not-json');
+    __setIoForTests(ioSpy);
+
+    getSocket();
+
+    expect(ioSpy).toHaveBeenCalledWith(
+      ENV.POSITIONS_WS_URL ?? 'ws://localhost:3000',
+      {
+        transports: ['websocket'],
+        auth: { token: null, userId: undefined },
+      },
+    );
+  });
+
+  it('disconnects and clears the socket on reset', () => {
+    const fakeSocket = createFakeSocket();
+    const ioSpy = jest.fn().mockReturnValue(fakeSocket);
+
+    __setIoForTests(ioSpy);
+
+    getSocket();
+    resetSocket();
+
+    expect(fakeSocket.disconnect).toHaveBeenCalledTimes(1);
+
+    getSocket();
+    expect(ioSpy).toHaveBeenCalledTimes(2);
   });
 });

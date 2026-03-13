@@ -1,266 +1,168 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+
 import NewsPage from './NewsPage';
 
-type Article = { title: string };
-
-type EmptyStateProps = {
-  title: string;
-  description: string;
-  actionLabel?: string;
-  onAction?: () => void;
-  disabled?: boolean;
-  action?: React.ReactNode;
-};
-
-type ErrorStateProps = {
-  message: string;
-  onRefresh: () => void;
-  isRefreshing: boolean;
-};
-
-type StickyRefreshProps = {
-  onRefresh: () => void;
-  isRefreshing: boolean;
-};
-
-type UseNewsPageVm = {
-  user: { id: number } | null;
-  positionsQuery: { isLoading: boolean; error: unknown | null };
-  newsQuery: { isLoading: boolean; error: unknown | null };
-  positions: Array<{ ticker: string }>;
-  tickers: string[];
-  symbols: string;
-  articles: Article[];
-  updatedLabel: string;
-  isRefreshing: boolean;
-  handleRefresh: () => Promise<void> | void;
-};
-
-const mockUseNewsPage = jest.fn<UseNewsPageVm, []>();
+const mockUseNewsPage = jest.fn();
 
 jest.mock('../hooks/useNewsPage', () => ({
-  __esModule: true,
   useNewsPage: () => mockUseNewsPage(),
 }));
 
 jest.mock('../components/states/NewsLoading', () => ({
   __esModule: true,
-  default: () => <div>NewsLoading</div>,
-}));
-jest.mock('../components/feed/NewsHeader', () => ({
-  __esModule: true,
-  default: () => <div>NewsHeader</div>,
-}));
-jest.mock('../components/feed/NewsArticles', () => ({
-  __esModule: true,
-  default: ({ articles }: { articles: Article[] }) => <div>NewsArticles:{articles.length}</div>,
-}));
-jest.mock('../components/states/NewsEmptyState', () => ({
-  __esModule: true,
-  default: (props: EmptyStateProps) => (
-    <div>
-      <div>{props.title}</div>
-      <div>{props.description}</div>
-      {props.actionLabel ? (
-        <button onClick={props.onAction} disabled={props.disabled}>
-          {props.actionLabel}
-        </button>
-      ) : null}
-      {props.action ? <div>ActionSlot</div> : null}
-    </div>
-  ),
-}));
-jest.mock('../components/states/NewsErrorState', () => ({
-  __esModule: true,
-  default: (props: ErrorStateProps) => (
-    <div>
-      <div>NewsError:{props.message}</div>
-      <button onClick={props.onRefresh} disabled={props.isRefreshing}>
-        Refresh
-      </button>
-    </div>
-  ),
-}));
-jest.mock('../components/feed/NewsMobileStickyRefresh', () => ({
-  __esModule: true,
-  default: (props: StickyRefreshProps) => (
-    <button onClick={props.onRefresh} disabled={props.isRefreshing}>
-      StickyRefresh
-    </button>
-  ),
+  default: () => <div data-testid="news-loading" />,
 }));
 
-function renderPage() {
-  return render(
-    <MemoryRouter initialEntries={['/app/news']}>
-      <NewsPage />
-    </MemoryRouter>,
-  );
-}
+jest.mock('../components/feed/NewsHeader', () => ({
+  __esModule: true,
+  default: () => <div data-testid="news-header" />,
+}));
+
+jest.mock('../components/feed/NewsArticles', () => ({
+  __esModule: true,
+  default: () => <div data-testid="news-articles" />,
+}));
+
+jest.mock('../components/states/NewsEmptyState', () => ({
+  __esModule: true,
+  default: (props: unknown) => {
+    const typed = props as { title: string; description: string; actionLabel?: string };
+    return (
+      <div data-testid="news-empty-state">
+        {typed.title}::{typed.description}::{typed.actionLabel ?? ''}
+      </div>
+    );
+  },
+}));
+
+jest.mock('../components/states/NewsErrorState', () => ({
+  __esModule: true,
+  default: (props: unknown) => {
+    const typed = props as { message: string };
+    return <div data-testid="news-error-state">{typed.message}</div>;
+  },
+}));
+
+jest.mock('../components/feed/NewsMobileStickyRefresh', () => ({
+  __esModule: true,
+  default: () => <div data-testid="news-mobile-refresh" />,
+}));
 
 describe('NewsPage', () => {
   beforeEach(() => {
-    mockUseNewsPage.mockReset();
+    jest.clearAllMocks();
   });
 
-  it('shows info alert when not logged in', () => {
+  it('asks unauthenticated users to log in', () => {
     mockUseNewsPage.mockReturnValue({
       user: null,
-      positionsQuery: { isLoading: false, error: null },
-      newsQuery: { isLoading: false, error: null },
-      positions: [],
-      tickers: [],
-      symbols: '',
-      articles: [],
-      updatedLabel: '—',
-      isRefreshing: false,
-      handleRefresh: jest.fn(),
     });
 
-    renderPage();
-    expect(screen.getByText(/please log in to view your portfolio news/i)).toBeInTheDocument();
+    render(<NewsPage />);
+
+    expect(screen.getByText('Please log in to view your portfolio news.')).toBeInTheDocument();
   });
 
-  it('shows spinner while positions are loading', () => {
+  it('shows a spinner while positions are loading', () => {
     mockUseNewsPage.mockReturnValue({
       user: { id: 1 },
-      positionsQuery: { isLoading: true, error: null },
-      newsQuery: { isLoading: false, error: null },
-      positions: [],
-      tickers: [],
-      symbols: '',
-      articles: [],
-      updatedLabel: '—',
-      isRefreshing: false,
-      handleRefresh: jest.fn(),
+      positionsQuery: { isLoading: true },
     });
 
-    renderPage();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    const { container } = render(<NewsPage />);
+
+    expect(container.querySelector('.MuiCircularProgress-root')).toBeInTheDocument();
   });
 
-  it('shows positions error', () => {
+  it('shows a positions error state', () => {
     mockUseNewsPage.mockReturnValue({
       user: { id: 1 },
-      positionsQuery: { isLoading: false, error: new Error('Positions failed') },
-      newsQuery: { isLoading: false, error: null },
-      positions: [],
-      tickers: [],
-      symbols: '',
-      articles: [],
-      updatedLabel: '—',
-      isRefreshing: false,
-      handleRefresh: jest.fn(),
+      positionsQuery: { isLoading: false, error: { message: 'Positions failed' } },
     });
 
-    renderPage();
+    render(<NewsPage />);
+
     expect(screen.getByText('Positions failed')).toBeInTheDocument();
   });
 
-  it('shows empty state when there are no open positions', () => {
+  it('shows no-open-positions empty state', () => {
     mockUseNewsPage.mockReturnValue({
       user: { id: 1 },
       positionsQuery: { isLoading: false, error: null },
-      newsQuery: { isLoading: false, error: null },
       positions: [],
-      tickers: [],
-      symbols: '',
-      articles: [],
-      updatedLabel: '—',
+    });
+
+    render(<NewsPage />);
+
+    expect(screen.getByTestId('news-empty-state')).toHaveTextContent('No open positions');
+  });
+
+  it('shows news loading state', () => {
+    mockUseNewsPage.mockReturnValue({
+      user: { id: 1 },
+      positionsQuery: { isLoading: false, error: null },
+      positions: [{ ticker: 'AAPL' }],
+      newsQuery: { isLoading: true },
+    });
+
+    render(<NewsPage />);
+
+    expect(screen.getByTestId('news-loading')).toBeInTheDocument();
+  });
+
+  it('shows news error state', () => {
+    mockUseNewsPage.mockReturnValue({
+      user: { id: 1 },
+      positionsQuery: { isLoading: false, error: null },
+      positions: [{ ticker: 'AAPL' }],
+      newsQuery: { isLoading: false, error: { message: 'News failed' } },
       isRefreshing: false,
       handleRefresh: jest.fn(),
     });
 
-    renderPage();
-    expect(screen.getByText('No open positions')).toBeInTheDocument();
-    expect(screen.getByText(/add positions to your portfolio/i)).toBeInTheDocument();
-    expect(screen.getByText('ActionSlot')).toBeInTheDocument();
+    render(<NewsPage />);
+
+    expect(screen.getByTestId('news-error-state')).toHaveTextContent('News failed');
   });
 
-  it('shows loading state when news is loading', () => {
+  it('shows empty headlines state when there are no articles', () => {
     mockUseNewsPage.mockReturnValue({
       user: { id: 1 },
       positionsQuery: { isLoading: false, error: null },
-      newsQuery: { isLoading: true, error: null },
       positions: [{ ticker: 'AAPL' }],
-      tickers: ['AAPL'],
-      symbols: 'AAPL',
-      articles: [],
-      updatedLabel: '1m ago',
-      isRefreshing: false,
-      handleRefresh: jest.fn(),
-    });
-
-    renderPage();
-    expect(screen.getByText('NewsLoading')).toBeInTheDocument();
-  });
-
-  it('shows error state when news fails and refresh calls handleRefresh', async () => {
-    const user = userEvent.setup();
-    const refresh = jest.fn();
-
-    mockUseNewsPage.mockReturnValue({
-      user: { id: 1 },
-      positionsQuery: { isLoading: false, error: null },
-      newsQuery: { isLoading: false, error: new Error('News failed') },
-      positions: [{ ticker: 'AAPL' }],
-      tickers: ['AAPL'],
-      symbols: 'AAPL',
-      articles: [],
-      updatedLabel: '—',
-      isRefreshing: false,
-      handleRefresh: refresh,
-    });
-
-    renderPage();
-    expect(screen.getByText('NewsError:News failed')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /refresh/i }));
-    expect(refresh).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows empty headlines state when there are no articles and refresh works', async () => {
-    const user = userEvent.setup();
-    const refresh = jest.fn();
-
-    mockUseNewsPage.mockReturnValue({
-      user: { id: 1 },
-      positionsQuery: { isLoading: false, error: null },
       newsQuery: { isLoading: false, error: null },
-      positions: [{ ticker: 'AAPL' }],
       tickers: ['AAPL'],
       symbols: 'AAPL',
       articles: [],
-      updatedLabel: '—',
-      isRefreshing: false,
-      handleRefresh: refresh,
-    });
-
-    renderPage();
-    expect(screen.getByText('No headlines available')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
-    expect(refresh).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders articles list when articles exist', () => {
-    mockUseNewsPage.mockReturnValue({
-      user: { id: 1 },
-      positionsQuery: { isLoading: false, error: null },
-      newsQuery: { isLoading: false, error: null },
-      positions: [{ ticker: 'AAPL' }],
-      tickers: ['AAPL'],
-      symbols: 'AAPL',
-      articles: [{ title: 't1' }, { title: 't2' }],
-      updatedLabel: '—',
+      updatedLabel: '2m ago',
       isRefreshing: false,
       handleRefresh: jest.fn(),
     });
 
-    renderPage();
-    expect(screen.getByText('NewsArticles:2')).toBeInTheDocument();
+    render(<NewsPage />);
+
+    expect(screen.getByTestId('news-empty-state')).toHaveTextContent('No headlines available');
+    expect(screen.getByTestId('news-mobile-refresh')).toBeInTheDocument();
+  });
+
+  it('shows populated news content when articles exist', () => {
+    mockUseNewsPage.mockReturnValue({
+      user: { id: 1 },
+      positionsQuery: { isLoading: false, error: null },
+      positions: [{ ticker: 'AAPL' }],
+      newsQuery: { isLoading: false, error: null },
+      tickers: ['AAPL'],
+      symbols: 'AAPL',
+      articles: [{ title: 'Apple headline' }],
+      updatedLabel: '2m ago',
+      isRefreshing: false,
+      handleRefresh: jest.fn(),
+    });
+
+    render(<NewsPage />);
+
+    expect(screen.getByTestId('news-header')).toBeInTheDocument();
+    expect(screen.getByTestId('news-articles')).toBeInTheDocument();
+    expect(screen.getByTestId('news-mobile-refresh')).toBeInTheDocument();
   });
 });

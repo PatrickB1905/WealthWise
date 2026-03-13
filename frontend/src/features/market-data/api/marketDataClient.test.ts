@@ -1,52 +1,70 @@
-const mockedGet = jest.fn();
+const mockCreateHttpClient = jest.fn();
+const mockGet = jest.fn();
 
 jest.mock('@shared/lib/http', () => ({
-  createHttpClient: jest.fn(() => ({
-    get: mockedGet,
-  })),
+  createHttpClient: (...args: unknown[]) => mockCreateHttpClient(...args),
 }));
 
-import { searchInstruments } from './marketDataClient';
+jest.mock('@shared/lib/env', () => ({
+  ENV: {
+    MARKET_DATA_API_URL: 'https://market.example.com',
+  },
+}));
 
-describe('marketDataClient.searchInstruments', () => {
+describe('marketDataClient', () => {
   beforeEach(() => {
+    jest.resetModules();
     jest.clearAllMocks();
+    mockCreateHttpClient.mockReturnValue({
+      get: mockGet,
+    });
   });
 
-  it('returns an empty array when the query is shorter than 2 characters', async () => {
-    await expect(searchInstruments('A')).resolves.toEqual([]);
-    expect(mockedGet).not.toHaveBeenCalled();
+  it('creates the market data client from env', async () => {
+    const mod = await import('./marketDataClient');
+
+    expect(mockCreateHttpClient).toHaveBeenCalledWith('https://market.example.com');
+    expect(mod.default).toBeDefined();
   });
 
-  it('trims the query and calls the instrument search endpoint with the expected params', async () => {
-    mockedGet.mockResolvedValue({
+  it('returns an empty array for queries shorter than 2 chars', async () => {
+    const { searchInstruments } = await import('./marketDataClient');
+
+    await expect(searchInstruments('a')).resolves.toEqual([]);
+    await expect(searchInstruments(' ')).resolves.toEqual([]);
+
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it('trims the query and calls the search endpoint with limit 10', async () => {
+    mockGet.mockResolvedValueOnce({
       data: [
         {
           symbol: 'AAPL',
           name: 'Apple Inc.',
           exchange: 'NASDAQ',
-          assetType: 'EQUITY',
+          assetType: 'stock',
           currency: 'USD',
           logoUrl: 'https://logo.example/aapl.png',
         },
       ],
     });
 
-    const result = await searchInstruments('  apple  ');
+    const { searchInstruments } = await import('./marketDataClient');
 
-    expect(mockedGet).toHaveBeenCalledWith('/instruments/search', {
-      params: { q: 'apple', limit: 10 },
-    });
-
-    expect(result).toEqual([
+    await expect(searchInstruments('  aapl  ')).resolves.toEqual([
       {
         symbol: 'AAPL',
         name: 'Apple Inc.',
         exchange: 'NASDAQ',
-        assetType: 'EQUITY',
+        assetType: 'stock',
         currency: 'USD',
         logoUrl: 'https://logo.example/aapl.png',
       },
     ]);
+
+    expect(mockGet).toHaveBeenCalledWith('/instruments/search', {
+      params: { q: 'aapl', limit: 10 },
+    });
   });
 });

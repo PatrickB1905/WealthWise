@@ -1,44 +1,22 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 
+import { makeTestQueryClient } from '@test/testQueryClient';
 import { useInstrumentSearch } from './useInstrumentSearch';
-import * as marketDataClient from '../api/marketDataClient';
+
+const mockSearchInstruments = jest.fn();
 
 jest.mock('../api/marketDataClient', () => ({
-  searchInstruments: jest.fn(),
+  searchInstruments: (...args: unknown[]) => mockSearchInstruments(...args),
 }));
 
-const mockedSearchInstruments = marketDataClient.searchInstruments as jest.MockedFunction<
-  typeof marketDataClient.searchInstruments
->;
+function createWrapper() {
+  const queryClient = makeTestQueryClient();
 
-function createTestQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
-}
-
-function HookHarness({
-  query,
-  enabled = true,
-}: {
-  query: string;
-  enabled?: boolean;
-}) {
-  const result = useInstrumentSearch(query, { enabled });
-
-  return (
-    <div>
-      <div data-testid="status">
-        {result.isFetching ? 'fetching' : result.isSuccess ? 'success' : 'idle'}
-      </div>
-      <div data-testid="count">{String(result.data?.length ?? 0)}</div>
-    </div>
-  );
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  };
 }
 
 describe('useInstrumentSearch', () => {
@@ -54,89 +32,100 @@ describe('useInstrumentSearch', () => {
     jest.useRealTimers();
   });
 
-  it('does not search when the query is shorter than 2 characters', async () => {
-    const queryClient = createTestQueryClient();
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <HookHarness query="A" />
-      </QueryClientProvider>,
-    );
+  it('does not query when disabled', () => {
+    renderHook(() => useInstrumentSearch('AAPL', { enabled: false }), {
+      wrapper: createWrapper(),
+    });
 
     act(() => {
-      jest.advanceTimersByTime(350);
+      jest.advanceTimersByTime(400);
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('count')).toHaveTextContent('0');
-    });
-
-    expect(mockedSearchInstruments).not.toHaveBeenCalled();
+    expect(mockSearchInstruments).not.toHaveBeenCalled();
   });
 
-  it('does not search when disabled', async () => {
-    const queryClient = createTestQueryClient();
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <HookHarness query="AAPL" enabled={false} />
-      </QueryClientProvider>,
-    );
+  it('does not query when debounced input is shorter than 2 chars', () => {
+    renderHook(() => useInstrumentSearch('A', { enabled: true }), {
+      wrapper: createWrapper(),
+    });
 
     act(() => {
-      jest.advanceTimersByTime(350);
+      jest.advanceTimersByTime(400);
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('count')).toHaveTextContent('0');
-    });
-
-    expect(mockedSearchInstruments).not.toHaveBeenCalled();
+    expect(mockSearchInstruments).not.toHaveBeenCalled();
   });
 
-  it('debounces when the query changes from empty to a searchable value', async () => {
-    mockedSearchInstruments.mockResolvedValue([
+  it('queries after debounce when enabled and query is valid', async () => {
+    mockSearchInstruments.mockResolvedValueOnce([
       {
         symbol: 'AAPL',
         name: 'Apple Inc.',
         exchange: 'NASDAQ',
-        assetType: 'EQUITY',
+        assetType: 'stock',
         currency: 'USD',
-        logoUrl: 'https://logo.example/aapl.png',
+        logoUrl: '',
       },
     ]);
 
-    const queryClient = createTestQueryClient();
-
-    const { rerender } = render(
-      <QueryClientProvider client={queryClient}>
-        <HookHarness query="" />
-      </QueryClientProvider>,
-    );
-
-    expect(mockedSearchInstruments).not.toHaveBeenCalled();
-
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <HookHarness query="apple" />
-      </QueryClientProvider>,
-    );
-
-    act(() => {
-      jest.advanceTimersByTime(299);
+    const { result } = renderHook(() => useInstrumentSearch('  aapl  ', { enabled: true }), {
+      wrapper: createWrapper(),
     });
-    expect(mockedSearchInstruments).not.toHaveBeenCalled();
 
-    act(() => {
-      jest.advanceTimersByTime(1);
+    expect(result.current.data).toBeUndefined();
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+      await Promise.resolve();
     });
 
     await waitFor(() => {
-      expect(mockedSearchInstruments).toHaveBeenCalledWith('apple');
+      expect(mockSearchInstruments).toHaveBeenCalledWith('aapl');
+    });
+  });
+
+  it('uses previous data as placeholder while changing query', async () => {
+    mockSearchInstruments.mockResolvedValueOnce([
+      {
+        symbol: 'AAPL',
+        name: 'Apple Inc.',
+        exchange: 'NASDAQ',
+        assetType: 'stock',
+        currency: 'USD',
+        logoUrl: '',
+      },
+    ]);
+
+    const { result, rerender } = renderHook(
+      ({ query }) => useInstrumentSearch(query, { enabled: true }),
+      {
+        initialProps: { query: 'AAPL' },
+        wrapper: createWrapper(),
+      },
+    );
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+      await Promise.resolve();
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('count')).toHaveTextContent('1');
+      expect(result.current.data).toEqual([expect.objectContaining({ symbol: 'AAPL' })]);
     });
+
+    mockSearchInstruments.mockResolvedValueOnce([
+      {
+        symbol: 'MSFT',
+        name: 'Microsoft',
+        exchange: 'NASDAQ',
+        assetType: 'stock',
+        currency: 'USD',
+        logoUrl: '',
+      },
+    ]);
+
+    rerender({ query: 'MSFT' });
+
+    expect(result.current.data).toEqual([expect.objectContaining({ symbol: 'AAPL' })]);
   });
 });

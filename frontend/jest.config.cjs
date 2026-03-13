@@ -24,6 +24,7 @@ module.exports = {
     '^@test/(.*)\\.js$': '<rootDir>/src/test/$1',
 
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@app/(.*)$': '<rootDir>/src/app/$1',
 
     '^@shared/ui$': '<rootDir>/src/shared/ui/index.ts',
     '^@shared/ui/(.*)$': '<rootDir>/src/shared/ui/$1',
@@ -54,4 +55,4 @@ module.exports = {
       lines: 85,
     },
   },
-}
+};
