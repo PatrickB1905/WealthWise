@@ -42,7 +42,7 @@ export function HomeTrustSection({ trustItems, portfolioScreenshotImg }: Props) 
                 const TrustIcon = i.icon.Icon;
 
                 return (
-                  <Grid item xs={12} sm={4} key={i.title}>
+                  <Grid size={{ xs: 12, sm: 4 }} key={i.title}>
                     <Stack spacing={0.6}>
                       <Typography
                         sx={{ fontWeight: 950, display: 'flex', alignItems: 'center', gap: 1 }}

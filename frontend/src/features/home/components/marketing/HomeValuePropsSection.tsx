@@ -47,9 +47,7 @@ export function HomeValuePropsSection({ items }: Props) {
 
             return (
               <Grid
-                item
-                xs={12}
-                md={4}
+                size={{ xs: 12, md: 4 }}
                 key={item.title}
                 sx={{
                   display: 'flex',

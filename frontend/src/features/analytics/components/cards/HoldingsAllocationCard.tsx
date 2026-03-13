@@ -1,6 +1,5 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -67,9 +66,19 @@ export const HoldingsAllocationCard: React.FC<Props> = ({
 
       <SectionContent>
         <InlineInfoAlert severity="info">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minWidth: 0, overflow: 'hidden' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+          >
             <span>
-              Concentration — Top 5 weight: {fixed(overview.concentration?.top5WeightPercent, 2)}% •
+              Concentration — Top 5 weight: {fixed(overview.concentration?.top5WeightPercent, 2)}%
+              {' • '}
               HHI: {fixed(overview.concentration?.hhi, 4)}
             </span>
             <InfoTip
@@ -177,7 +186,7 @@ export const HoldingsAllocationCard: React.FC<Props> = ({
             </MobileListWrap>
 
             {/* Desktop */}
-            <TableWrap component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
+            <TableWrap sx={{ display: { xs: 'none', md: 'block' } }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
