@@ -12,7 +12,7 @@ def test_returns_none_for_blank_symbol() -> None:
     assert c.fetch_quote("   ") is None
 
 
-def test_builds_logo_dev_logo_when_website_present(
+def test_builds_internal_logo_path_when_website_present(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import yfinance as yf
@@ -26,14 +26,6 @@ def test_builds_logo_dev_logo_when_website_present(
             return pd.DataFrame({"Close": [100.0, 110.0]})
 
     monkeypatch.setattr(yf, "Ticker", lambda _ticker: DummyTicker())
-    monkeypatch.setattr(
-        "app.clients.yahoo_finance.settings.logo_dev_token",
-        "test-token",
-    )
-    monkeypatch.setattr(
-        "app.clients.yahoo_finance.settings.logo_dev_base_url",
-        "https://img.logo.dev",
-    )
 
     c = YahooFinanceClient()
     q = c.fetch_quote("msft")
@@ -42,10 +34,11 @@ def test_builds_logo_dev_logo_when_website_present(
     assert q.symbol == "MSFT"
     assert q.current_price == 110.0
     assert q.daily_change_percent == 10.0
-    assert q.logo_url == "https://img.logo.dev/microsoft.com?token=test-token"
+    assert q.logo_url == "/api/market-data/logos/by-domain/microsoft.com"
+    assert q.updated_at is not None
 
 
-def test_falls_back_to_yahoo_logo_url_when_logo_dev_cannot_be_built(
+def test_returns_empty_logo_when_no_domain_can_be_resolved(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import yfinance as yf
@@ -54,21 +47,20 @@ def test_falls_back_to_yahoo_logo_url_when_logo_dev_cannot_be_built(
         @property
         def info(self) -> dict[str, Any]:
             return {
-                "logo_url": "https://example.com/logo.png",
-                "website": "https://ignored.com",
+                "logo_url": "",
+                "website": "",
             }
 
         def history(self, *args: Any, **kwargs: Any) -> pd.DataFrame:
             return pd.DataFrame({"Close": [100.0, 110.0]})
 
     monkeypatch.setattr(yf, "Ticker", lambda _ticker: DummyTicker())
-    monkeypatch.setattr("app.clients.yahoo_finance.settings.logo_dev_token", "")
 
     c = YahooFinanceClient()
     q = c.fetch_quote("AAPL")
 
     assert q is not None
-    assert q.logo_url == "https://example.com/logo.png"
+    assert q.logo_url == ""
 
 
 def test_returns_none_when_not_enough_history(monkeypatch: pytest.MonkeyPatch) -> None:

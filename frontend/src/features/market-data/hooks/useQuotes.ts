@@ -212,6 +212,7 @@ export function useQuotes(symbols: string[]) {
     placeholderData: () => buildQuotesForSymbols(queryClient, normalized),
 
     staleTime: 15_000,
+    gcTime: 5 * 60_000,
     refetchInterval: 20_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: false,

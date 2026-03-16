@@ -22,7 +22,7 @@ class _StubYahooClient:
                 exchange="NASDAQ",
                 asset_type="EQUITY",
                 currency="USD",
-                logo_url="https://logo.example/tsla.png",
+                logo_url="/api/market-data/logos/by-domain/tesla.com",
             )
         ]
 
@@ -43,6 +43,6 @@ def test_search_instruments_route_returns_normalized_api_shape() -> None:
             "exchange": "NASDAQ",
             "assetType": "EQUITY",
             "currency": "USD",
-            "logoUrl": "https://logo.example/tsla.png",
+            "logoUrl": "/api/market-data/logos/by-domain/tesla.com",
         }
     ]

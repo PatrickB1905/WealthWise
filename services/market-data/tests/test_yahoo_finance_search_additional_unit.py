@@ -51,8 +51,8 @@ def test_search_instruments_calls_search_method_when_quotes_is_none(
     client = YahooFinanceClient()
     monkeypatch.setattr(
         client,
-        "_get_instrument_metadata",
-        lambda _symbol: InstrumentMetadata(logo_url=""),
+        "get_instrument_metadata",
+        lambda _symbol: InstrumentMetadata(logo_domain=""),
     )
 
     results = client.search_instruments("apple")
@@ -73,18 +73,10 @@ def test_get_instrument_metadata_uses_cache(
         }
 
     monkeypatch.setattr(client, "_fetch_info", fake_fetch_info)
-    monkeypatch.setattr(
-        "app.clients.yahoo_finance.settings.logo_dev_token",
-        "test-token",
-    )
-    monkeypatch.setattr(
-        "app.clients.yahoo_finance.settings.logo_dev_base_url",
-        "https://img.logo.dev",
-    )
 
-    first = client._get_instrument_metadata("AAPL")
-    second = client._get_instrument_metadata("AAPL")
+    first = client.get_instrument_metadata("AAPL")
+    second = client.get_instrument_metadata("AAPL")
 
-    assert first.logo_url == "https://img.logo.dev/apple.com?token=test-token"
-    assert second.logo_url == first.logo_url
+    assert first.logo_domain == "apple.com"
+    assert second.logo_domain == first.logo_domain
     assert calls["count"] == 1

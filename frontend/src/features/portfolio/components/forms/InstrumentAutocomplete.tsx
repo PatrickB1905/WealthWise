@@ -79,7 +79,6 @@ function SelectedInstrumentAdornment({
           sx={{ width: 24, height: 24, fontSize: 11, flexShrink: 0 }}
           slotProps={{
             img: {
-              referrerPolicy: 'no-referrer',
               loading: 'lazy',
               onError: onLogoError,
             },
@@ -193,7 +192,6 @@ export function InstrumentAutocomplete({
               sx={{ width: 28, height: 28, fontSize: 12, flexShrink: 0 }}
               slotProps={{
                 img: {
-                  referrerPolicy: 'no-referrer',
                   loading: 'lazy',
                   onError: handleLogoError(option.symbol),
                 },

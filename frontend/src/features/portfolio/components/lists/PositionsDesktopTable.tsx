@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -41,6 +42,32 @@ type Props = {
   onDelete: (p: Position) => void;
 };
 
+function PositionLogoAvatar({
+  src,
+  symbol,
+}: {
+  src?: string;
+  symbol: string;
+}) {
+  const [broken, setBroken] = useState(false);
+  const fallback = symbol.slice(0, 1).toUpperCase() || '?';
+
+  return (
+    <Avatar
+      src={src && !broken ? src : undefined}
+      alt={`${symbol} logo`}
+      slotProps={{
+        img: {
+          loading: 'lazy',
+          onError: () => setBroken(true),
+        },
+      }}
+    >
+      {fallback}
+    </Avatar>
+  );
+}
+
 export function PositionsDesktopTable({
   tab,
   positions,
@@ -74,6 +101,8 @@ export function PositionsDesktopTable({
             const cost = pos.buyPrice * pos.quantity;
 
             if (tab === 'closed') {
+              const sym = normalizeSymbol(pos.ticker);
+              const q = quotesMap[sym];
               const price = isFiniteNumber(pos.sellPrice) ? pos.sellPrice : pos.buyPrice;
               const profit = price * pos.quantity - cost;
               const pctVal = cost ? (profit / cost) * 100 : 0;
@@ -83,12 +112,9 @@ export function PositionsDesktopTable({
                   <TableCell>
                     <TickerCell>
                       <TickerLogo>
-                        <Avatar
-                          src={quotesMap[normalizeSymbol(pos.ticker)]?.logoUrl}
-                          alt={pos.ticker}
-                        />
+                        <PositionLogoAvatar src={q?.logoUrl} symbol={sym} />
                       </TickerLogo>
-                      {normalizeSymbol(pos.ticker)}
+                      {sym}
                     </TickerCell>
                   </TableCell>
 
@@ -143,7 +169,7 @@ export function PositionsDesktopTable({
                 <TableCell>
                   <TickerCell>
                     <TickerLogo>
-                      <Avatar src={q?.logoUrl} alt={sym} />
+                      <PositionLogoAvatar src={q?.logoUrl} symbol={sym} />
                     </TickerLogo>
 
                     <QuoteMetaWrap>

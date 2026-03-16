@@ -2,18 +2,13 @@ from __future__ import annotations
 
 import time
 
-from app.clients.yahoo_finance import QuoteData
+from app.clients.yahoo_finance import InstrumentMetadata, QuoteData
 from app.services import quotes as quotes_mod
 
 
 class _DummyClient:
-    def fetch_quote(self, symbol: str) -> QuoteData | None:
-        return QuoteData(
-            symbol=symbol,
-            current_price=123.45,
-            daily_change_percent=1.23,
-            logo_url=f"https://logo.example/{symbol.lower()}.png",
-        )
+    def get_instrument_metadata(self, symbol: str) -> InstrumentMetadata:
+        return InstrumentMetadata(logo_domain=f"{symbol.lower()}.com")
 
 
 def test_parse_symbols_deduplicates_normalizes_and_limits() -> None:
@@ -27,7 +22,8 @@ def test_fetch_quotes_uses_cached_quote_when_download_has_no_row(monkeypatch) ->
         symbol="AAPL",
         current_price=150.0,
         daily_change_percent=2.5,
-        logo_url="https://logo.example/aapl.png",
+        logo_url="/api/market-data/logos/by-domain/apple.com",
+        updated_at="2026-03-13T20:00:00Z",
     )
 
     quotes_mod._cache_put(cached, now=now)
@@ -43,7 +39,7 @@ def test_fetch_quotes_uses_cached_quote_when_download_has_no_row(monkeypatch) ->
     assert result == [cached]
 
 
-def test_fetch_quotes_uses_logo_from_client_when_price_download_succeeds(monkeypatch) -> None:
+def test_fetch_quotes_uses_logo_from_metadata_when_price_download_succeeds(monkeypatch) -> None:
     monkeypatch.setattr(
         quotes_mod,
         "_compute_from_download",
@@ -66,4 +62,5 @@ def test_fetch_quotes_uses_logo_from_client_when_price_download_succeeds(monkeyp
     assert result[0].symbol == "AAPL"
     assert result[0].current_price == 200.0
     assert result[0].daily_change_percent == 5.0
-    assert result[0].logo_url == "https://logo.example/aapl.png"
+    assert result[0].logo_url == "/api/market-data/logos/by-domain/aapl.com"
+    assert result[0].updated_at is not None

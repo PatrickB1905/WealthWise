@@ -57,16 +57,16 @@ def test_search_instruments_filters_to_us_equities_and_enriches_missing_logos(
 
     def fake_get_metadata(symbol: str) -> InstrumentMetadata:
         if symbol == "TSLA":
-            return InstrumentMetadata(logo_url="https://logo.example/tsla.png")
-        return InstrumentMetadata(logo_url="")
+            return InstrumentMetadata(logo_domain="tesla.com")
+        return InstrumentMetadata(logo_domain="")
 
-    monkeypatch.setattr(client, "_get_instrument_metadata", fake_get_metadata)
+    monkeypatch.setattr(client, "get_instrument_metadata", fake_get_metadata)
 
     results = client.search_instruments("tes", max_results=10)
 
     assert [item.symbol for item in results] == ["TSLA", "AMZN"]
-    assert results[0].logo_url == "https://logo.example/tsla.png"
-    assert results[1].logo_url == "https://logo.example/amzn.png"
+    assert results[0].logo_url == "/api/market-data/logos/by-domain/tesla.com"
+    assert results[1].logo_url == "/api/market-data/logos/by-domain/logo.example"
 
 
 def test_search_instruments_prefers_exact_symbol_matches(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -94,8 +94,8 @@ def test_search_instruments_prefers_exact_symbol_matches(monkeypatch: pytest.Mon
     client = YahooFinanceClient()
     monkeypatch.setattr(
         client,
-        "_get_instrument_metadata",
-        lambda _symbol: InstrumentMetadata(logo_url=""),
+        "get_instrument_metadata",
+        lambda _symbol: InstrumentMetadata(logo_domain=""),
     )
 
     results = client.search_instruments("AAPL", max_results=10)
@@ -113,12 +113,12 @@ def test_search_instruments_does_not_lookup_metadata_when_logo_already_exists(
 
     def fake_get_metadata(symbol: str) -> InstrumentMetadata:
         calls.append(symbol)
-        return InstrumentMetadata(logo_url=f"https://logo.example/{symbol.lower()}.png")
+        return InstrumentMetadata(logo_domain=f"{symbol.lower()}.com")
 
-    monkeypatch.setattr(client, "_get_instrument_metadata", fake_get_metadata)
+    monkeypatch.setattr(client, "get_instrument_metadata", fake_get_metadata)
 
     results = client.search_instruments("amz", max_results=10)
 
     amzn = next(item for item in results if item.symbol == "AMZN")
-    assert amzn.logo_url == "https://logo.example/amzn.png"
+    assert amzn.logo_url == "/api/market-data/logos/by-domain/logo.example"
     assert "AMZN" not in calls

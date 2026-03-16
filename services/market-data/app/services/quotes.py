@@ -6,7 +6,13 @@ from typing import TYPE_CHECKING, Any
 
 import yfinance as yf
 
-from app.clients.yahoo_finance import QuoteData, YahooFinanceClient
+from app.clients.yahoo_finance import (
+    QuoteData,
+    YahooFinanceClient,
+    build_internal_logo_path,
+    utc_now_iso,
+)
+from app.core.config import settings
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -30,7 +36,7 @@ def parse_symbols(symbols_csv: str, *, max_symbols: int) -> list[str]:
     return uniq
 
 
-@dataclass
+@dataclass(frozen=True)
 class _QuoteRow:
     symbol: str
     current_price: float
@@ -39,7 +45,6 @@ class _QuoteRow:
 
 _CACHE: dict[str, QuoteData] = {}
 _CACHE_TS: dict[str, float] = {}
-_CACHE_TTL_SECONDS = 30.0
 
 
 def _cache_put(q: QuoteData, *, now: float) -> None:
@@ -54,7 +59,7 @@ def _cache_get(sym: str, *, now: float) -> QuoteData | None:
 
     ts = _CACHE_TS.get(sym, 0.0)
     age = now - ts
-    if age > _CACHE_TTL_SECONDS:
+    if age > settings.quote_cache_ttl_seconds:
         _CACHE.pop(sym, None)
         _CACHE_TS.pop(sym, None)
         return None
@@ -189,9 +194,15 @@ def fetch_quotes(
         return []
 
     now = time.time()
-    price_rows = _compute_from_download(symbols)
+    updated_at = utc_now_iso()
+
+    try:
+        price_rows = _compute_from_download(symbols)
+    except Exception:
+        price_rows = {}
 
     out: list[QuoteData] = []
+
     for sym in symbols:
         row = price_rows.get(sym)
 
@@ -201,21 +212,23 @@ def fetch_quotes(
                 out.append(cached)
             continue
 
-        logo_url = ""
+        cached = _cache_get(sym, now=now)
+
+        logo_url = cached.logo_url if cached is not None else ""
         try:
-            q = client.fetch_quote(sym)
-            if q is not None:
-                logo_url = q.logo_url
+            metadata = client.get_instrument_metadata(sym)
+            built_logo = build_internal_logo_path(metadata.logo_domain)
+            if built_logo:
+                logo_url = built_logo
         except Exception:
-            cached = _cache_get(sym, now=now)
-            if cached is not None and cached.logo_url:
-                logo_url = cached.logo_url
+            pass
 
         quote = QuoteData(
             symbol=sym,
             current_price=row.current_price,
             daily_change_percent=row.daily_change_percent,
             logo_url=logo_url,
+            updated_at=updated_at,
         )
 
         _cache_put(quote, now=now)

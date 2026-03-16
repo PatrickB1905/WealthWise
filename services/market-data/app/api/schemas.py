@@ -8,6 +8,7 @@ class Quote(BaseModel):
     currentPrice: float
     dailyChangePercent: float
     logoUrl: str
+    updatedAt: str | None = None
 
 
 class InstrumentSearchResult(BaseModel):

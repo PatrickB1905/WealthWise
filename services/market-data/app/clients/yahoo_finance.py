@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from urllib.parse import quote, urlparse
 
 import yfinance as yf
@@ -18,6 +19,7 @@ class QuoteData:
     current_price: float
     daily_change_percent: float
     logo_url: str
+    updated_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -32,33 +34,79 @@ class InstrumentSearchResultData:
 
 @dataclass(frozen=True)
 class InstrumentMetadata:
-    logo_url: str
+    logo_domain: str
 
 
 _METADATA_CACHE: dict[str, InstrumentMetadata] = {}
 _METADATA_CACHE_TS: dict[str, float] = {}
-_METADATA_CACHE_TTL_SECONDS = 60.0 * 60.0
 
 
-def _normalize_domain_from_website(website: str) -> str:
-    parsed = urlparse(website.strip())
-    domain = parsed.netloc.strip().lower()
-
-    if domain.startswith("www."):
-        domain = domain[4:]
-
-    return domain
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _build_logo_dev_url(domain: str) -> str:
-    if not domain or not settings.logo_dev_token:
+def normalize_logo_domain(domain: str) -> str:
+    normalized = domain.strip().lower()
+
+    if normalized.startswith("http://") or normalized.startswith("https://"):
+        parsed = urlparse(normalized)
+        normalized = parsed.netloc.strip().lower()
+
+    if normalized.startswith("www."):
+        normalized = normalized[4:]
+
+    normalized = normalized.rstrip(".")
+    return normalized
+
+
+def is_valid_logo_domain(domain: str) -> bool:
+    normalized = normalize_logo_domain(domain)
+    if not normalized:
+        return False
+
+    parts = normalized.split(".")
+    if len(parts) < 2:
+        return False
+
+    allowed = set("abcdefghijklmnopqrstuvwxyz0123456789-")
+
+    for part in parts:
+        if not part:
+            return False
+        if part.startswith("-") or part.endswith("-"):
+            return False
+        if any(ch not in allowed for ch in part):
+            return False
+
+    return True
+
+
+def build_internal_logo_path(domain: str) -> str:
+    normalized = normalize_logo_domain(domain)
+    if not is_valid_logo_domain(normalized):
+        return ""
+    return f"/api/market-data/logos/by-domain/{quote(normalized, safe='')}"
+
+
+def build_logo_dev_url(
+    domain: str,
+    *,
+    token: str,
+    base_url: str,
+) -> str:
+    normalized = normalize_logo_domain(domain)
+    if not is_valid_logo_domain(normalized):
+        return ""
+    if not token.strip():
         return ""
 
-    encoded_domain = quote(domain, safe="")
-    encoded_token = quote(settings.logo_dev_token, safe="")
-    base_url = settings.logo_dev_base_url.rstrip("/")
+    normalized_base_url = base_url.strip().rstrip("/")
+    if not normalized_base_url:
+        return ""
 
-    return f"{base_url}/{encoded_domain}?token={encoded_token}"
+    encoded_domain = quote(normalized, safe="")
+    encoded_token = quote(token.strip(), safe="")
+    return f"{normalized_base_url}/{encoded_domain}?token={encoded_token}"
 
 
 def _normalize_text(value: object) -> str:
@@ -69,21 +117,43 @@ def _normalize_symbol(value: object) -> str:
     return _normalize_text(value).upper()
 
 
-def _resolve_logo_url_from_info(info: dict[str, object]) -> str:
-    website = _normalize_text(info.get("website") or info.get("websiteUrl") or info.get("homepage"))
-    raw_logo_url = _normalize_text(info.get("logo_url") or info.get("logoUrl"))
+def _normalize_domain_from_website(website: str) -> str:
+    parsed = urlparse(website.strip())
+    domain = parsed.netloc.strip().lower()
 
+    if domain.startswith("www."):
+        domain = domain[4:]
+
+    return domain.rstrip(".")
+
+
+def _resolve_logo_domain_from_info(info: dict[str, object]) -> str:
+    website = _normalize_text(info.get("website") or info.get("websiteUrl") or info.get("homepage"))
     if website:
         domain = _normalize_domain_from_website(website)
-        built_logo = _build_logo_dev_url(domain)
-        if built_logo:
-            return built_logo
+        if is_valid_logo_domain(domain):
+            return domain
 
-    return raw_logo_url
+    raw_logo_url = _normalize_text(info.get("logo_url") or info.get("logoUrl"))
+    if raw_logo_url:
+        try:
+            parsed = urlparse(raw_logo_url)
+            domain = parsed.netloc.strip().lower()
+            if domain.startswith("www."):
+                domain = domain[4:]
+            if is_valid_logo_domain(domain):
+                return domain
+        except Exception:
+            pass
+
+    return ""
 
 
-def _extract_logo_url(raw: dict[str, object]) -> str:
-    return _resolve_logo_url_from_info(raw)
+def _build_api_logo_url_from_info(info: dict[str, object]) -> str:
+    domain = _resolve_logo_domain_from_info(info)
+    if not domain:
+        return ""
+    return build_internal_logo_path(domain)
 
 
 def _build_instrument_result(raw: dict[str, object]) -> InstrumentSearchResultData | None:
@@ -116,7 +186,7 @@ def _build_instrument_result(raw: dict[str, object]) -> InstrumentSearchResultDa
         exchange=exchange,
         asset_type=asset_type,
         currency=currency,
-        logo_url=_extract_logo_url(raw),
+        logo_url=_build_api_logo_url_from_info(raw),
     )
 
 
@@ -132,7 +202,7 @@ def _cache_get_metadata(symbol: str, *, now: float) -> InstrumentMetadata | None
 
     ts = _METADATA_CACHE_TS.get(symbol, 0.0)
     age = now - ts
-    if age > _METADATA_CACHE_TTL_SECONDS:
+    if age > settings.metadata_cache_ttl_seconds:
         _METADATA_CACHE.pop(symbol, None)
         _METADATA_CACHE_TS.pop(symbol, None)
         return None
@@ -186,24 +256,24 @@ class YahooFinanceClient:
             return {}
         return info
 
-    def _get_instrument_metadata(self, symbol: str) -> InstrumentMetadata:
+    def get_instrument_metadata(self, symbol: str) -> InstrumentMetadata:
         sym = symbol.strip().upper()
         if not sym:
-            return InstrumentMetadata(logo_url="")
+            return InstrumentMetadata(logo_domain="")
 
         now = time.time()
         cached = _cache_get_metadata(sym, now=now)
         if cached is not None:
             return cached
 
-        logo_url = ""
+        logo_domain = ""
         try:
             info = self._fetch_info(sym)
-            logo_url = _resolve_logo_url_from_info(info)
+            logo_domain = _resolve_logo_domain_from_info(info)
         except Exception:
             log.exception("Failed to fetch instrument metadata for %s", sym)
 
-        metadata = InstrumentMetadata(logo_url=logo_url)
+        metadata = InstrumentMetadata(logo_domain=logo_domain)
         _cache_put_metadata(sym, metadata, now=now)
         return metadata
 
@@ -214,12 +284,6 @@ class YahooFinanceClient:
 
         try:
             ticker = yf.Ticker(sym)
-            info = ticker.info or {}
-            if not isinstance(info, dict):
-                info = {}
-
-            logo_url = _resolve_logo_url_from_info(info)
-
             hist = ticker.history(period="2d", actions=False)
             if hist is None or len(hist) < 2:
                 log.warning("Not enough history data for %s", sym)
@@ -227,14 +291,16 @@ class YahooFinanceClient:
 
             prev_close = float(hist["Close"].iloc[-2])
             current_price = float(hist["Close"].iloc[-1])
-
             daily_pct = ((current_price - prev_close) / prev_close) * 100.0 if prev_close else 0.0
+
+            metadata = self.get_instrument_metadata(sym)
 
             return QuoteData(
                 symbol=sym,
                 current_price=current_price,
                 daily_change_percent=round(daily_pct, 2),
-                logo_url=logo_url,
+                logo_url=build_internal_logo_path(metadata.logo_domain),
+                updated_at=utc_now_iso(),
             )
         except Exception:
             log.exception("Failed to fetch quote for %s", sym)
@@ -304,7 +370,7 @@ class YahooFinanceClient:
                 enriched.append(item)
                 continue
 
-            metadata = self._get_instrument_metadata(item.symbol)
+            metadata = self.get_instrument_metadata(item.symbol)
             enriched.append(
                 InstrumentSearchResultData(
                     symbol=item.symbol,
@@ -312,7 +378,7 @@ class YahooFinanceClient:
                     exchange=item.exchange,
                     asset_type=item.asset_type,
                     currency=item.currency,
-                    logo_url=metadata.logo_url,
+                    logo_url=build_internal_logo_path(metadata.logo_domain),
                 )
             )
 

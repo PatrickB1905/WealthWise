@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Typography from '@mui/material/Typography';
 
 import {
@@ -41,6 +42,32 @@ type Props = {
   onDelete: (p: Position) => void;
 };
 
+function PositionLogoAvatar({
+  src,
+  symbol,
+}: {
+  src?: string;
+  symbol: string;
+}) {
+  const [broken, setBroken] = useState(false);
+  const fallback = symbol.slice(0, 1).toUpperCase() || '?';
+
+  return (
+    <MobileTickerAvatar
+      src={src && !broken ? src : undefined}
+      alt={`${symbol} logo`}
+      slotProps={{
+        img: {
+          loading: 'lazy',
+          onError: () => setBroken(true),
+        },
+      }}
+    >
+      {fallback}
+    </MobileTickerAvatar>
+  );
+}
+
 export function PositionsMobileList({
   tab,
   positions,
@@ -69,7 +96,7 @@ export function PositionsMobileList({
             <MobilePositionCard key={pos.id}>
               <MobileCardTopRow>
                 <MobileCardTitleRow>
-                  <MobileTickerAvatar src={q?.logoUrl} alt={sym} />
+                  <PositionLogoAvatar src={q?.logoUrl} symbol={sym} />
                   <MobileTickerSymbol>{sym}</MobileTickerSymbol>
                 </MobileCardTitleRow>
 
@@ -121,7 +148,11 @@ export function PositionsMobileList({
               <SoftDivider />
 
               <MobileCardActions>
-                <PositionsMobileActionButton size="small" variant="outlined" onClick={() => onEdit(pos)}>
+                <PositionsMobileActionButton
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onEdit(pos)}
+                >
                   Edit
                 </PositionsMobileActionButton>
 
@@ -149,7 +180,7 @@ export function PositionsMobileList({
           <MobilePositionCard key={pos.id}>
             <MobileCardTopRow>
               <MobileCardTitleRow>
-                <MobileTickerAvatar src={q?.logoUrl} alt={sym} />
+                <PositionLogoAvatar src={q?.logoUrl} symbol={sym} />
 
                 <QuoteMetaWrap>
                   <MobileTickerSymbol>{sym}</MobileTickerSymbol>
@@ -205,11 +236,19 @@ export function PositionsMobileList({
             <SoftDivider />
 
             <MobileCardActions>
-              <PositionsMobileActionButton size="small" variant="outlined" onClick={() => onClose(pos)}>
+              <PositionsMobileActionButton
+                size="small"
+                variant="outlined"
+                onClick={() => onClose(pos)}
+              >
                 Close
               </PositionsMobileActionButton>
 
-              <PositionsMobileActionButton size="small" variant="outlined" onClick={() => onEdit(pos)}>
+              <PositionsMobileActionButton
+                size="small"
+                variant="outlined"
+                onClick={() => onEdit(pos)}
+              >
                 Edit
               </PositionsMobileActionButton>
 

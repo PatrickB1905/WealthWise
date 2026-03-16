@@ -98,27 +98,33 @@ By isolating all external data integrations within a single service, WealthWise 
 
 Responsibilities:
 
-- **External market data retrieval**  
-  Fetches real-time and recent pricing information for stocks and cryptocurrencies from third-party financial data providers.
+-   **External market data retrieval**\
+    Fetches real-time and recent pricing information for stocks and cryptocurrencies from third-party financial data providers.
 
-- **Integration with financial data APIs**  
-  Communicates with external market data providers and handles provider-specific request formats, response structures, rate limits, and error handling.
+-   **Integration with financial data APIs**\
+    Communicates with external market data providers and handles provider-specific request formats, response structures, rate limits, and error handling.
 
-- **Data normalization and validation**  
-  Transforms raw API responses into a consistent internal format so that all backend services receive standardized quote data regardless of the original provider.
+-   **Data normalization and validation**\
+    Transforms raw API responses into a consistent internal format so that all backend services receive standardized quote data regardless of the original provider.
 
-- **Providing a unified quotes API**  
-  Exposes a simple `/quotes` endpoint that other services can call to retrieve price data for one or more symbols.
+-   **Providing a unified quotes API**\
+    Exposes a simple `/quotes` endpoint that other services can call to retrieve price data for one or more symbols.
 
-- **Company logo resolution**  
-  Retrieves company logo assets associated with stock symbols so that portfolio positions can display recognizable branding alongside financial data.
+-   **Company logo resolution and delivery**\
+    Resolves company website domains from Yahoo Finance metadata and retrieves associated brand logos. Logos are delivered to the frontend through a secure backend proxy endpoint so that external provider credentials are never exposed to the browser.
 
-- **Reliability and fault tolerance**  
-  Implements retry logic and error handling to gracefully manage network failures or temporary outages from external data providers.
+-   **Reliability and fault tolerance**\
+    Implements retry logic, caching, and error handling to gracefully manage network failures or temporary outages from external data providers.
 
 Currently, the service retrieves pricing data using **Yahoo Finance via the `yfinance` library**, which provides access to stock market pricing and historical quote information.
 
-For company logos, the service uses **[Logo.dev](https://www.logo.dev/)** to retrieve brand assets based on the company's website domain. The domain is obtained from Yahoo Finance metadata and used to construct a Logo.dev image URL that can be rendered directly by the frontend.
+For company logos, the service integrates with **[Logo.dev](https://www.logo.dev/)** to retrieve brand assets based on the company's website domain. The domain is obtained from Yahoo Finance metadata and used by the Market Data Service to securely fetch logo images from the provider.
+
+Instead of exposing third-party asset URLs directly to the browser, the service provides a same-origin API endpoint:
+
+    /api/market-data/logos/by-domain/{domain}
+
+The frontend loads logos through this endpoint, allowing the backend to manage provider authentication, domain validation, caching headers, and error handling while keeping API tokens secure.
 
 This integration is encapsulated within the Market Data Service so that logo providers can be replaced or extended in the future without requiring changes to other parts of the platform. If a domain-based logo cannot be resolved, the service falls back to the logo URL provided by Yahoo Finance when available.
 

@@ -5,7 +5,7 @@ from typing import Any
 
 import pandas as pd
 import pytest
-from app.clients.yahoo_finance import QuoteData, YahooFinanceClient
+from app.clients.yahoo_finance import InstrumentMetadata, QuoteData, YahooFinanceClient
 from app.services import quotes as quotes_mod
 
 
@@ -17,23 +17,15 @@ class _Row:
 
 
 class _ClientOk(YahooFinanceClient):
-    def __init__(self, logo_url: str = "https://img.logo.dev/example.com?token=test-token") -> None:
-        self._logo_url = logo_url
+    def __init__(self, logo_domain: str = "example.com") -> None:
+        self._logo_domain = logo_domain
 
-    def fetch_quote(self, symbol: str) -> QuoteData | None:
-        sym = symbol.strip().upper()
-        if not sym:
-            return None
-        return QuoteData(
-            symbol=sym,
-            current_price=0.0,
-            daily_change_percent=0.0,
-            logo_url=self._logo_url,
-        )
+    def get_instrument_metadata(self, symbol: str) -> InstrumentMetadata:
+        return InstrumentMetadata(logo_domain=self._logo_domain)
 
 
 class _ClientBoom(YahooFinanceClient):
-    def fetch_quote(self, symbol: str) -> QuoteData | None:
+    def get_instrument_metadata(self, symbol: str) -> InstrumentMetadata:
         raise RuntimeError("boom")
 
 
@@ -50,12 +42,18 @@ def test_parse_symbols_dedupes_trims_uppercases_and_limits() -> None:
 
 
 def test_cache_put_get_hit_and_expiry() -> None:
-    q = QuoteData(symbol="AAPL", current_price=1.0, daily_change_percent=2.0, logo_url="logo")
+    q = QuoteData(
+        symbol="AAPL",
+        current_price=1.0,
+        daily_change_percent=2.0,
+        logo_url="logo",
+        updated_at="2026-03-13T20:00:00Z",
+    )
     quotes_mod._cache_put(q, now=100.0)
 
     assert quotes_mod._cache_get("AAPL", now=100.0) == q
 
-    expired = quotes_mod._cache_get("AAPL", now=100.0 + quotes_mod._CACHE_TTL_SECONDS + 0.01)
+    expired = quotes_mod._cache_get("AAPL", now=100.0 + 9999.0)
     assert expired is None
     assert "AAPL" not in quotes_mod._CACHE
     assert "AAPL" not in quotes_mod._CACHE_TS
@@ -162,7 +160,8 @@ def test_fetch_quotes_uses_cache_when_download_missing_rows(
         symbol="AAPL",
         current_price=9.0,
         daily_change_percent=9.0,
-        logo_url="cached",
+        logo_url="/api/market-data/logos/by-domain/apple.com",
+        updated_at="2026-03-13T20:00:00Z",
     )
     quotes_mod._cache_put(cached, now=100.0)
 
@@ -184,7 +183,8 @@ def test_fetch_quotes_logo_falls_back_to_cached_on_client_exception(
         symbol="AAPL",
         current_price=1.0,
         daily_change_percent=1.0,
-        logo_url="cached-logo",
+        logo_url="/api/market-data/logos/by-domain/cached.com",
+        updated_at="2026-03-13T20:00:00Z",
     )
     quotes_mod._cache_put(cached, now=100.0)
 
@@ -199,7 +199,7 @@ def test_fetch_quotes_logo_falls_back_to_cached_on_client_exception(
     out = quotes_mod.fetch_quotes("AAPL", client=_ClientBoom(), max_symbols=10)
     assert len(out) == 1
     assert out[0].symbol == "AAPL"
-    assert out[0].logo_url == "cached-logo"
+    assert out[0].logo_url == "/api/market-data/logos/by-domain/cached.com"
 
 
 def test_fetch_quotes_cache_written_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -210,8 +210,12 @@ def test_fetch_quotes_cache_written_on_success(monkeypatch: pytest.MonkeyPatch) 
     )
     monkeypatch.setattr(quotes_mod.time, "time", lambda: 100.0)
 
-    out = quotes_mod.fetch_quotes("AAPL", client=_ClientOk(logo_url="logo-1"), max_symbols=10)
+    out = quotes_mod.fetch_quotes(
+        "AAPL", client=_ClientOk(logo_domain="logo-1.com"), max_symbols=10
+    )
     assert len(out) == 1
     assert out[0].symbol == "AAPL"
-    assert quotes_mod._CACHE["AAPL"].logo_url == "logo-1"
+    assert out[0].logo_url == "/api/market-data/logos/by-domain/logo-1.com"
+    assert quotes_mod._CACHE["AAPL"].logo_url == "/api/market-data/logos/by-domain/logo-1.com"
     assert quotes_mod._CACHE_TS["AAPL"] == 100.0
+    assert out[0].updated_at is not None
